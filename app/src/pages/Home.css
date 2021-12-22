@@ -1,0 +1,15 @@
+.clickableFlexBox {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+.gif {
+  max-height: 400px;
+  object-fit: cover;
+}
+.grail {
+  max-height: 400px;
+  object-fit: cover;
+}
