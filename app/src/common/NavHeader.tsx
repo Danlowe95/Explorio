@@ -51,18 +51,19 @@ const NavHeader = () => {
                 className="menu-gap"
               />
               <MenuList>
-                <MenuItem onClick={() => navigate("/")}>Home</MenuItem>
+                {/* <MenuItem onClick={() => navigate("/")}>Home</MenuItem> */}
                 {!isLargerThan520 && <MenuItem onClick={() => {}}>Connect wallet</MenuItem>}
-                <MenuItem onClick={() => navigate("/hunt")}>Hunt</MenuItem>
+                {!isLargerThan720 && <><MenuItem onClick={() => navigate("/hunt")}><b>Hunt</b></MenuItem>
+                <MenuItem onClick={() => navigate("/marketplace")}>
+                  <b>Marketplace</b>
+                </MenuItem></>}
                 <MenuItem onClick={() => navigate("/how-to-play")}>
-                  How to Play
+                  How to play
                 </MenuItem>
                 <MenuItem onClick={() => navigate("/information")}>
                   Statistics
                 </MenuItem>
-                <MenuItem onClick={() => navigate("/marketplace")}>
-                  Marketplace
-                </MenuItem>
+
               </MenuList>
             </Menu>
           <Link to="/" >
@@ -82,8 +83,25 @@ const NavHeader = () => {
           </Flex>
           {isLargerThan520 && (
             <Flex justifyContent="flex-end" paddingRight={6}>
+              {isLargerThan720 && (
+            <><ButtonGroup spacing={4} variant="outline" marginRight={4}>
+              <LinkButton to="/hunt" backgroundColor="gray.100" height="50px" fontSize="16px" >
+                <Text>Play</Text>
+              </LinkButton>
+
+              <LinkButton
+                to="/marketplace"
+                backgroundColor="gray.100"
+                height="50px"
+              >
+                <Text>Marketplace</Text>
+              </LinkButton>
+            </ButtonGroup>
+            </>
+            )}
               <ConnectWallet />
             </Flex>
+
           )}
         </Flex>
       </Container>
