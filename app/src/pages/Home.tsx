@@ -47,8 +47,8 @@ const App = () => {
           </Text>
           <Text mb={tParaBottom}>
             Deployed on the Solana network, the Explorio protocol hosts a
-            non-interactive game that is ever-running. The game is called "The
-            Hunt for the Holy Grail," and an Explorer NFT is to play.
+            non-interactive game that is ever-running. The game is called <b>The
+            Hunt for the Holy Grail</b>, and an Explorer NFT, among others, are used to play.
           </Text>
           <Text mb={tParaBottom}>
             {" "}
@@ -56,19 +56,19 @@ const App = () => {
             protocol, in which owners of NFTs from the Explorer NFT collection
             are able to send their Explorer off to fight and hunt for the Holy
             Grail, a relic believed to be lost somewhere deep in the forest of
-            these medieval-inspired lands.
+            this medieval-inspired world.
           </Text>
           <Text mb={tParaBottom}>
             Players gear up their Explorer to fight to be the first to find the
             Grail. But the Holy Grail isn't the only treasure there is to be
             found: many other useful and valuable items have been lost in the
             ancient forest, and an Explorer could find weapons, armors, potions
-            and more to aid them in their hunts.
+            and more to aid them in their future hunts.
           </Text>
           <Text mb={tParaBottom}>
             {" "}
-            All treasures found through playing the game are NFTs. They are only
-            mintable by finding them in game, and once found, they can be traded
+            All treasures found through playing the game are represented by NFTs. Most of these NFTs are only
+            mintable by finding them in game. Once found, they are able to be traded
             with other players.
           </Text>
           <Text mb={tParaBottom}>
@@ -121,12 +121,12 @@ const App = () => {
               So what is The Holy Grail, and why do people want to find it?
             </Heading> */}
             <Text mb={tParaBottom}>
-              The Holy Grail itself is a special, cosmetic NFT that will be
-              rewarded to whoever finds it. What's more, finding the Holy Grail
-              comes with a payout from the "Grail fund."
+              The Holy Grail itself is a special, cosmetic NFT
+              rewarded to whoever is lucky enough to find it. What's more, finding the Holy Grail
+              comes with a payout from the "Grail fund" held by the Explorio protocol.
             </Text>
             <Heading size="md" mb={mdHeadingBottom}>
-              What is the Grail reward, and where does it come from?
+              What is the Grail fund, and where does it come from?
             </Heading>
             <Text mb={tBottom}>
               The reward for finding the Grail is some amount of{" "}
@@ -144,16 +144,13 @@ const App = () => {
             <Text mb={tBottom}>
               <b>As for where that reward comes from:</b> 80% of the proceeds
               from the initial Explorer mint will be used to bootstrap the Grail
-              Fund. The other 20% of the proceeds will be split between the
-              Developer Fund and the Charity Fund (more information about these
-              later).
+              Fund. The other 20% of the proceeds will be split between developer funds and charity initiatives.
             </Text>
             <Text mb={tBottom}>
               {" "}
-              In addition to this initial funding, all NFT trades on the
-              marketplace will be subject to a small fee, with a portion of
-              those marketplace fees being directed back towards all three
-              Funds. This means that as people play the game, the reward for
+              In addition to this initial source, all NFT trades on the
+              marketplace after launch will be subject to a small fee, with a portion of
+              those fees being split between the protocol, developer, and charity initiatives. This means that as people play the game, the reward for
               finding the Holy Grail will continually increase!
             </Text>
             <Text>

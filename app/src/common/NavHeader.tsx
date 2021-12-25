@@ -40,60 +40,19 @@ const NavHeader = () => {
           direction="row"
           margin="0 auto"
         >
-          <Link to="/">
-            <Flex color="gray.100" direction="column" alignItems="flex-start">
-              <Heading
-                variant="h1"
-                fontSize={{ base: "2xl", md: "3xl", lg: "3xl" }}
-              >
-                Explorio
-              </Heading>
-              <Text fontSize={{ base: "sm", md: "md", lg: "xl" }}>
-                The Hunt for the Holy Grail
-              </Text>
-            </Flex>
-          </Link>
-          {isLargerThan720 ? (
-            <ButtonGroup spacing={4} variant="outline">
-              <LinkButton to="/" size="lg" backgroundColor="gray.100">
-                <Text>Home</Text>
-              </LinkButton>
-              <LinkButton to="/hunt" size="lg" backgroundColor="gray.100">
-                <Text>Hunt</Text>
-              </LinkButton>
-              <LinkButton
-                to="/how-to-play"
-                size="lg"
-                backgroundColor="gray.100"
-              >
-                <Text>How to play</Text>
-              </LinkButton>
-              <LinkButton
-                to="/information"
-                size="lg"
-                backgroundColor="gray.100"
-              >
-                <Text>Statistics</Text>
-              </LinkButton>
-              <LinkButton
-                to="/marketplace"
-                size="lg"
-                backgroundColor="gray.100"
-              >
-                <Text>Marketplace</Text>
-              </LinkButton>
-            </ButtonGroup>
-          ) : (
-            <Menu>
+          <Flex justifyContent="flex-start" alignItems="center">
+          <Menu>
               <MenuButton
                 as={IconButton}
                 aria-label="Options"
                 icon={<HamburgerIcon />}
                 variant="outline"
+                backgroundColor="white"
+                className="menu-gap"
               />
               <MenuList>
                 <MenuItem onClick={() => navigate("/")}>Home</MenuItem>
-                <MenuItem onClick={() => {}}>Connect wallet</MenuItem>
+                {!isLargerThan520 && <MenuItem onClick={() => {}}>Connect wallet</MenuItem>}
                 <MenuItem onClick={() => navigate("/hunt")}>Hunt</MenuItem>
                 <MenuItem onClick={() => navigate("/how-to-play")}>
                   How to Play
@@ -106,8 +65,21 @@ const NavHeader = () => {
                 </MenuItem>
               </MenuList>
             </Menu>
-          )}
+          <Link to="/" >
+            <Flex color="gray.100" direction="column" alignItems="flex-start">
+              <Heading
+                variant="h1"
+                fontSize="2xl"
+              >
+                Explorio
+              </Heading>
+              <Text fontSize="md">
+                The Hunt for the Holy Grail
+              </Text>
+            </Flex>
+          </Link>
 
+          </Flex>
           {isLargerThan520 && (
             <Flex justifyContent="flex-end" paddingRight={6}>
               <ConnectWallet />

@@ -13,7 +13,7 @@ const App = () => {
   return (
     <PageSkeleton>
       <PageContainer>
-        <Flex justifyContent="center">
+        <Flex justifyContent="center" marginBottom={12}>
           <Heading size="2xl">How to play</Heading>
         </Flex>
         <Flex gridGap={4} mb={12} direction={["column", null, "row"]}>
