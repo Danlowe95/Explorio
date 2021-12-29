@@ -150,7 +150,7 @@ const App = () => {
               {" "}
               In addition to this initial source, all NFT trades on the
               marketplace after launch will be subject to a small fee, with a portion of
-              those fees being split between the protocol, developer, and charity initiatives. This means that as people play the game, the reward for
+              those fees being split between the protocol, developer, and charity initiatives. As people play the game, the reward for
               finding the Holy Grail will continually increase!
             </Text>
             <Text>
