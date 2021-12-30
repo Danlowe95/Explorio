@@ -9,19 +9,21 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
     explorer_token_bump: u8, 
     gear_token_bump: u8, 
     potion_token_bump: u8,
-    state_account_bump: u8
+    // state_account_bump: u8
 )]
 pub struct EnterHunt<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+
     // the associated accounts which holds the user's NFTs for sending here.
     #[account(mut)]
-    pub user_explorer_account: Account<'info, TokenAccount>,
+    pub user_explorer_account: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub user_provided_gear_account: Account<'info, TokenAccount>,
-    pub user_potion_account: Account<'info, TokenAccount>,
+    pub user_provided_gear_account: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub user_potion_account: Box<Account<'info, TokenAccount>>,
 
-    // Start - All escrow accounts that will hold user's NFTs.
+    // Start - The 3 escrow accounts to create that will hold user's NFTs.
     #[account( 
         init, 
         payer = user, 
@@ -30,7 +32,7 @@ pub struct EnterHunt<'info> {
         token::mint = explorer_mint, 
         token::authority = explorer_escrow_account
     )]
-    pub explorer_escrow_account: Account<'info, TokenAccount>,
+    pub explorer_escrow_account: Box<Account<'info, TokenAccount>>,
     #[account( 
         init, 
         payer = user, 
@@ -39,7 +41,7 @@ pub struct EnterHunt<'info> {
         token::mint = provided_gear_mint, 
         token::authority = provided_gear_escrow_account
     )]
-    pub provided_gear_escrow_account: Account<'info, TokenAccount>,
+    pub provided_gear_escrow_account: Box<Account<'info, TokenAccount>>,
     #[account( 
         init, 
         payer = user, 
@@ -48,31 +50,29 @@ pub struct EnterHunt<'info> {
         token::mint = potion_mint, 
         token::authority = potion_escrow_account
     )]
-    pub potion_escrow_account: Account<'info, TokenAccount>,
+    pub potion_escrow_account: Box<Account<'info, TokenAccount>>,
 
-    // Start - All mints for potential claimables
-    pub explorer_mint: Account<'info, Mint>,
-    pub provided_gear_mint: Account<'info, Mint>,
-    pub potion_mint: Account<'info, Mint>,
+    // Start - The 3 mints for deposits
+    pub explorer_mint: Box<Account<'info, Mint>>,
+    pub provided_gear_mint: Box<Account<'info, Mint>>,
+    pub potion_mint: Box<Account<'info, Mint>>,
 
     #[account(mut)]
-    pub state_account: Account<'info, HuntState>,
+    pub state_account: Box<Account<'info, HuntState>>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }
 
 
-    // Enter a hunt by depositing an explorer NFT
-    pub fn enterHunt(
+    // Enter a hunt by depositing an explorer+gear NFT
+    pub fn handler(
         ctx: Context<EnterHunt>,
         explorer_token_bump: u8,
         gear_token_bump: u8,
         potion_token_bump: u8,
-        state_account_bump: u8
+        // state_account_bump: u8
     ) -> ProgramResult {
-        let user_account = &mut ctx.accounts.user;
-
         // Transfer the user's explorer token to the escrow account.
         anchor_spl::token::transfer(
             CpiContext::new(
@@ -85,7 +85,7 @@ pub struct EnterHunt<'info> {
                 },
             ),
             1,
-        );
+        )?;
 
         // Transfer the user's gear token to the escrow account.
         anchor_spl::token::transfer(
@@ -99,7 +99,7 @@ pub struct EnterHunt<'info> {
                 },
             ),
             1,
-        );
+        )?;
 
         // // Transfer the user's potion token to the escrow account.
         // anchor_spl::token::transfer(
@@ -113,11 +113,11 @@ pub struct EnterHunt<'info> {
         //         },
         //     ),
         //     1,
-        // );
+        // )?;
 
         let state_account = &mut ctx.accounts.state_account;
 
-        // let entered_explorer_struct = 
+        // Set all necessary data in the hunt state 
         state_account.hunt_state_vec.push(EnteredExplorer {
             explorer_escrow_account: ctx.accounts.explorer_escrow_account.key(),
             provided_gear_escrow_account: ctx.accounts.provided_gear_escrow_account.key(),
@@ -127,7 +127,8 @@ pub struct EnterHunt<'info> {
             provided_potion_escrow_bump: None, // potion_token_bump,
             has_hunted: false,
             provided_potion: false,
-            lost_provided_gear: false,
+            provided_gear_burned: false,
+            provided_gear_kept: false,
             won_combat_gear: false,
             combat_reward_escrow_account: None,
             combat_reward_escrow_bump: None,

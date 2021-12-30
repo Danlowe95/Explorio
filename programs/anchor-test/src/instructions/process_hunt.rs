@@ -1,41 +1,48 @@
 use anchor_lang::prelude::*;
-
+use anchor_spl::token::{TokenAccount};
+use crate::state::{HuntState};
 
 #[derive(Accounts)]
 pub struct ProcessHunt<'info> {
-    // confirm owner is the program's upgrade authority
-    // #[account(constraint = owner.key == *owner.key)]
-    // pub owner: Account<'info>,
-    pub user: Signer<'info>,
-    // the associated account which will receive the user's explorer
-    // #[account(mut)]
-    // pub user_explorer_account: Account<'info>,
-
-    // #[account(
-    //     mut,
-    //     seeds = [user.key().as_ref()],
-    //     bump = escrowed_explorer_token_bump, 
-    // )]
-    // pub explorer_escrow_account: Account<'info>,
-
-    // #[account(mut, constraint = *user.key == locked_explorer_data.user)]
-    // pub locked_explorer_data: Account<'info, LockedExplorerData>,
-    // needs the user (Signer) confirmed to be protocol owner, possibly rent/sysprogram, 
-    // and possibly all accounts being modified by the protocol itself (all explorer accounts - this would be impossible?)
     
+    pub user: Signer<'info>,
+    
+    #[account(mut)]
+    pub state_account: Account<'info, HuntState>,
+    // for reading total ust if grail is found
+    // TODO will need to store in state UST value outstanding while waiting for user to claim
+    pub program_ust_account: Account<'info, TokenAccount>,
+
+    // Eventually
+    // #[account(
+    //     mut
+    // )]
+    // pub history_account: Account<'info, HuntHistory>,
+
+    // pub ust_mint: Account<'info, Mint>,
+
+    // pub token_program: Program<'info, Token>,
+    // pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+    // pub rent: Sysvar<'info, Rent>,
+
 }
 
 
 // Run the hunt - only owner can run it for now
-pub fn processHunt(ctx: Context<ProcessHunt>) -> ProgramResult {
-    // Get NFT data from all supplied accounts.
+pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
+    // Walk the state vec and do some basic stub processing
+    let state_vec = &mut ctx.accounts.state_account.hunt_state_vec;
+    // position returns the index
+    // TODO improve this search to be secure
+    for entry in &mut state_vec.iter_mut() {
+        entry.has_hunted = true;
+        entry.provided_gear_kept = true;
+        entry.won_combat_gear = false;
+        entry.found_treasure = false;
+    }
+    // potentially store timestamp in state so this only runs once per 3 hours
 
-    // let locked_explorer_data = &mut ctx.accounts.locked_explorer_data;
-    // locked_explorer_data.is_locked = false;
-
-    // fake hunt processing by unlocking
-
-    // release to users
     Ok(())
 
 }

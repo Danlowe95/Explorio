@@ -3,17 +3,299 @@
   "name": "anchor_test",
   "instructions": [
     {
-      "name": "create",
+      "name": "initializeProgram",
       "accounts": [
         {
-          "name": "baseAccount",
+          "name": "authority",
           "isMut": true,
           "isSigner": true
         },
         {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "programUstAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ustMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "stateAccountBump",
+          "type": "u8"
+        },
+        {
+          "name": "programUstAccountBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "claimHunt",
+      "accounts": [
+        {
           "name": "user",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "userAssociatedExplorerAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userAssociatedProvidedGearAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userAssociatedCombatRewardAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userAssociatedPotionAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userAssociatedTreasureAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userAssociatedUstAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "explorerEscrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "providedGearEscrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "potionEscrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "combatRewardEscrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "explorerMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "providedGearMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "potionMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "combatRewardGearMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "treasureMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ustMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "explorerTokenBump",
+          "type": "u8"
+        },
+        {
+          "name": "gearTokenBump",
+          "type": "u8"
+        },
+        {
+          "name": "potionTokenBump",
+          "type": "u8"
+        },
+        {
+          "name": "combatWonGearTokenBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "enterHunt",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userExplorerAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userProvidedGearAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userPotionAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "explorerEscrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "providedGearEscrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "potionEscrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "explorerMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "providedGearMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "potionMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "explorerTokenBump",
+          "type": "u8"
+        },
+        {
+          "name": "gearTokenBump",
+          "type": "u8"
+        },
+        {
+          "name": "potionTokenBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "processHunt",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "programUstAccount",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -22,39 +304,136 @@
         }
       ],
       "args": []
-    },
-    {
-      "name": "increment",
-      "accounts": [
-        {
-          "name": "baseAccount",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "basicTest",
-      "accounts": [],
-      "args": []
     }
   ],
   "accounts": [
     {
-      "name": "BaseAccount",
+      "name": "HuntState",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "count",
-            "type": "u64"
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "huntStateVec",
+            "type": {
+              "vec": {
+                "defined": "EnteredExplorer"
+              }
+            }
+          },
+          {
+            "name": "huntStateAccountBump",
+            "type": "u8"
+          },
+          {
+            "name": "programUstAccountBump",
+            "type": "u8"
           }
         ]
       }
     }
   ],
+  "types": [
+    {
+      "name": "EnteredExplorer",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "explorerEscrowAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "providedGearEscrowAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "providedPotionEscrowAccount",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "explorerEscrowBump",
+            "type": "u8"
+          },
+          {
+            "name": "providedGearEscrowBump",
+            "type": "u8"
+          },
+          {
+            "name": "providedPotionEscrowBump",
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "providedPotion",
+            "type": "bool"
+          },
+          {
+            "name": "hasHunted",
+            "type": "bool"
+          },
+          {
+            "name": "providedGearBurned",
+            "type": "bool"
+          },
+          {
+            "name": "providedGearKept",
+            "type": "bool"
+          },
+          {
+            "name": "wonCombatGear",
+            "type": "bool"
+          },
+          {
+            "name": "foundTreasure",
+            "type": "bool"
+          },
+          {
+            "name": "usedPotion",
+            "type": "bool"
+          },
+          {
+            "name": "combatRewardEscrowAccount",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "combatRewardEscrowBump",
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "treasureTypeMint",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "grailRewardInUst",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "HasNotHunted",
+      "msg": "Claim is not possible yet as the Explorer has not hunted."
+    }
+  ],
   "metadata": {
-    "address": "ctqhWwv4TABZqzX3WJsJhiQDY6xNpVYW7KHtJL3ZRKC"
+    "address": "69v7eiACV758WzGopNQN8s5WRG5TcTSF4nexNP8F5p7d"
   }
 }

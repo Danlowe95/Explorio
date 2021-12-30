@@ -44,4 +44,5 @@ describe("anchor-test", () => {
   //   );
   //   assert.ok(baseAccountData.count.toString() == "1");
   // });
+  assert.ok(true);
 });
