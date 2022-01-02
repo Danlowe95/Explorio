@@ -6,7 +6,7 @@
       "name": "initializeProgram",
       "accounts": [
         {
-          "name": "authority",
+          "name": "owner",
           "isMut": true,
           "isSigner": true
         },
@@ -21,7 +21,27 @@
           "isSigner": false
         },
         {
+          "name": "gear1Account",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "potion1Account",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "ustMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gear1Mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "potion1Mint",
           "isMut": false,
           "isSigner": false
         },
@@ -53,6 +73,14 @@
         },
         {
           "name": "programUstAccountBump",
+          "type": "u8"
+        },
+        {
+          "name": "gear1AccountBump",
+          "type": "u8"
+        },
+        {
+          "name": "potion1AccountBump",
           "type": "u8"
         }
       ]
@@ -101,17 +129,22 @@
           "isSigner": false
         },
         {
-          "name": "providedGearEscrowAccount",
+          "name": "providedGearPda",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "potionEscrowAccount",
+          "name": "providedPotionPda",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "combatRewardEscrowAccount",
+          "name": "combatRewardPda",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasurePda",
           "isMut": true,
           "isSigner": false
         },
@@ -126,7 +159,7 @@
           "isSigner": false
         },
         {
-          "name": "potionMint",
+          "name": "providedPotionMint",
           "isMut": false,
           "isSigner": false
         },
@@ -171,24 +204,7 @@
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "explorerTokenBump",
-          "type": "u8"
-        },
-        {
-          "name": "gearTokenBump",
-          "type": "u8"
-        },
-        {
-          "name": "potionTokenBump",
-          "type": "u8"
-        },
-        {
-          "name": "combatWonGearTokenBump",
-          "type": "u8"
-        }
-      ]
+      "args": []
     },
     {
       "name": "enterHunt",
@@ -204,12 +220,7 @@
           "isSigner": false
         },
         {
-          "name": "userProvidedGearAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "userPotionAccount",
+          "name": "userProvidedGearAssociatedAccount",
           "isMut": true,
           "isSigner": false
         },
@@ -219,18 +230,8 @@
           "isSigner": false
         },
         {
-          "name": "providedGearEscrowAccount",
+          "name": "providedGearPda",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "potionEscrowAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "explorerMint",
-          "isMut": false,
           "isSigner": false
         },
         {
@@ -239,7 +240,7 @@
           "isSigner": false
         },
         {
-          "name": "potionMint",
+          "name": "explorerMint",
           "isMut": false,
           "isSigner": false
         },
@@ -267,14 +268,6 @@
       "args": [
         {
           "name": "explorerTokenBump",
-          "type": "u8"
-        },
-        {
-          "name": "gearTokenBump",
-          "type": "u8"
-        },
-        {
-          "name": "potionTokenBump",
           "type": "u8"
         }
       ]
@@ -313,7 +306,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "authority",
+            "name": "owner",
             "type": "publicKey"
           },
           {
@@ -331,6 +324,14 @@
           {
             "name": "programUstAccountBump",
             "type": "u8"
+          },
+          {
+            "name": "gear1AccountBump",
+            "type": "u8"
+          },
+          {
+            "name": "potion1AccountBump",
+            "type": "u8"
           }
         ]
       }
@@ -347,11 +348,11 @@
             "type": "publicKey"
           },
           {
-            "name": "providedGearEscrowAccount",
+            "name": "providedGearPda",
             "type": "publicKey"
           },
           {
-            "name": "providedPotionEscrowAccount",
+            "name": "providedPotionPda",
             "type": {
               "option": "publicKey"
             }
@@ -359,16 +360,6 @@
           {
             "name": "explorerEscrowBump",
             "type": "u8"
-          },
-          {
-            "name": "providedGearEscrowBump",
-            "type": "u8"
-          },
-          {
-            "name": "providedPotionEscrowBump",
-            "type": {
-              "option": "u8"
-            }
           },
           {
             "name": "providedPotion",
@@ -399,15 +390,9 @@
             "type": "bool"
           },
           {
-            "name": "combatRewardEscrowAccount",
+            "name": "combatRewardPda",
             "type": {
               "option": "publicKey"
-            }
-          },
-          {
-            "name": "combatRewardEscrowBump",
-            "type": {
-              "option": "u8"
             }
           },
           {
@@ -429,6 +414,11 @@
   "errors": [
     {
       "code": 6000,
+      "name": "BadMintProvided",
+      "msg": "Bad mint provided."
+    },
+    {
+      "code": 6001,
       "name": "HasNotHunted",
       "msg": "Claim is not possible yet as the Explorer has not hunted."
     }

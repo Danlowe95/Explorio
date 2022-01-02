@@ -1,6 +1,8 @@
 import { Connection, PublicKey, Commitment } from "@solana/web3.js";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import { Program, Provider, web3 } from "@project-serum/anchor";
+import * as spl from '@solana/spl-token';
+
 import idl from "./idl.json";
 
 const { SystemProgram, Keypair } = web3;
@@ -37,19 +39,32 @@ export async function initializeHuntProgram(wallet: WalletContextState) {
         [Buffer.from("state", "utf-8")],
         program.programId
     );
-    const [ustAccount, ustAccountBump] = await PublicKey.findProgramAddress(
+    const [programUstAccount, programUstAccountBump] = await PublicKey.findProgramAddress(
         [Buffer.from("fund", "utf-8")],
         program.programId
     );
+
+    // Example of associated token
+    // let associatedAccount = await spl.Token.getAssociatedTokenAddress(
+    //     spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+    //     spl.TOKEN_PROGRAM_ID,
+    //     mintPda,
+    //     program.provider.wallet.publicKey,
+    // );
 
     try {
         await program.rpc.initializeProgram({
             stateAccountBump,
             programUstAccountBump,
             accounts: {
-                authority: 
+                authority: provider.wallet.publicKey,
+                stateAccount: stateAccount,
+                tokenProgram: spl.TOKEN_PROGRAM_ID,
+                associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+                systemProgram: SystemProgram.programId,
+                rent: SYSVAR_RENT_PUBKEY
             },
-            signers: [provider.wallet],
+            signers: [],
         })
     } catch (err) {
         console.log("Transaction error: ", err);

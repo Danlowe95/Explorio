@@ -4,22 +4,16 @@ use crate::state::{HuntState};
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use anchor_spl::associated_token::{AssociatedToken};
 
-#[error]
-pub enum ErrorCode {
-    #[msg("Claim is not possible yet as the Explorer has not hunted.")]
-    HasNotHunted,
-}
-
 
 // todo bump wasn't intended to be passed in - pulled from huntState
 // that requires deserialization and lookup on frontend
 // would need to pass in bumps for ALL escrow accounts unless better way found.
 #[derive(Accounts)]
 #[instruction(
-    explorer_token_bump: u8, 
-    gear_token_bump: u8, 
-    potion_token_bump: u8,
-    combat_reward_gear_token_bump: u8,
+     explorer_token_bump: u8, 
+    // gear_token_bump: u8, 
+    // potion_token_bump: u8,
+    // combat_reward_gear_token_bump: u8,
     // state_account_bump: u8,
 )]
 pub struct ClaimHunt<'info> {
@@ -51,7 +45,7 @@ pub struct ClaimHunt<'info> {
     #[account(
         init_if_needed,
         payer = user,
-        associated_token::mint = potion_mint,
+        associated_token::mint = provided_potion_mint,
         associated_token::authority = user
     )]
     pub user_associated_potion_account: Box<Account<'info, TokenAccount>>,
@@ -77,29 +71,19 @@ pub struct ClaimHunt<'info> {
         bump = explorer_token_bump, 
     )]
     pub explorer_escrow_account: Box<Account<'info, TokenAccount>>,
-    #[account( 
-        mut,
-        seeds = [provided_gear_mint.key().as_ref(), b"gear"],
-        bump = gear_token_bump, 
-    )]
-    pub provided_gear_escrow_account: Box<Account<'info, TokenAccount>>,
-    #[account( 
-        mut,
-        seeds = [potion_mint.key().as_ref(), b"potion"],
-        bump = potion_token_bump, 
-    )]
-    pub potion_escrow_account: Box<Account<'info, TokenAccount>>,
-    #[account( 
-        mut,
-        seeds = [combat_reward_gear_mint.key().as_ref(), b"gear"],
-        bump = combat_reward_gear_token_bump, 
-    )]
-    pub combat_reward_escrow_account: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub provided_gear_pda: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub provided_potion_mint_authority: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub combat_reward_pda: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub treasure_pda: Box<Account<'info, TokenAccount>>,
 
     // Start - All mints for potential claimables
     pub explorer_mint: Box<Account<'info, Mint>>,
     pub provided_gear_mint: Box<Account<'info, Mint>>,
-    pub potion_mint: Box<Account<'info, Mint>>,
+    pub provided_potion_mint: Box<Account<'info, Mint>>,
     // To be grabbed by the frontend from state and passed through
     pub combat_reward_gear_mint: Box<Account<'info, Mint>>,
     pub treasure_mint: Box<Account<'info, Mint>>,
@@ -117,22 +101,22 @@ pub struct ClaimHunt<'info> {
     // Allow user to reclaim explorer NFT
     pub fn handler(
         ctx: Context<ClaimHunt>,     
-        explorer_token_bump: u8, 
-        gear_token_bump: u8, 
-        potion_token_bump: u8,
-        combat_reward_gear_token_bump: u8,
+        // explorer_token_bump: u8, 
+        // gear_token_bump: u8, 
+        // potion_token_bump: u8,
+        // combat_reward_gear_token_bump: u8,
         // state_account_bump: u8
     ) -> ProgramResult {
         let state_account = &mut ctx.accounts.state_account;
-        let state_vec = &mut state_account.hunt_state_vec;
+
         let explorer_escrow_account = &mut ctx.accounts.explorer_escrow_account;
         // position returns the index
         // TODO improve this search to be secure
-        let relevant_vec_entry_index = state_vec.iter().position(|x| x.explorer_escrow_account == explorer_escrow_account.key()).unwrap();
-        let entered_explorer_data = &state_vec[relevant_vec_entry_index];
+        let relevant_vec_entry_index = state_account.hunt_state_vec.iter().position(|x| x.explorer_escrow_account == explorer_escrow_account.key()).unwrap();
+        let entered_explorer_data = &state_account.hunt_state_vec[relevant_vec_entry_index];
         
         if entered_explorer_data.has_hunted == false {
-            return Err(ErrorCode::HasNotHunted.into());
+            return Err(crate::ErrorCode::HasNotHunted.into());
         }
         // Transfer the user's explorer token back to their assoc. account.
         anchor_spl::token::transfer(
@@ -154,8 +138,9 @@ pub struct ClaimHunt<'info> {
                 },
                 &[&[
                     ctx.accounts.explorer_mint.key().as_ref(),
+                    ctx.accounts.user.key().as_ref(), 
                     b"explorer",
-                    &[explorer_token_bump],
+                    &[entered_explorer_data.explorer_escrow_bump],
                 ]],
             ),
             1,
@@ -177,59 +162,37 @@ pub struct ClaimHunt<'info> {
             &[&[
                 ctx.accounts.explorer_mint.key().as_ref(),
                 b"explorer",
-                &[explorer_token_bump],
+                &[entered_explorer_data.explorer_escrow_bump],
             ]],
         ))?;
         if entered_explorer_data.provided_potion {
             if entered_explorer_data.used_potion {
                 // Burn and close escrow
             } else {
+                // TODO get bump for provided potion by iterating over POTION_MINTS
+                // to get the right tuple
                 // Transfer the user's potion back to their assoc. account.
-                anchor_spl::token::transfer(
+                anchor_spl::token::mint_to(
                     CpiContext::new_with_signer(
                         ctx.accounts.token_program.to_account_info(),
-                        anchor_spl::token::Transfer {
-                            from: ctx
-                                .accounts
-                                .potion_escrow_account
-                                .to_account_info(),
+                        anchor_spl::token::MintTo {
+                            mint: ctx.accounts.provided_potion_mint.to_account_info(),
                             to: ctx
                                 .accounts
                                 .user_associated_potion_account
                                 .to_account_info(),
                             authority: ctx
                                 .accounts
-                                .potion_escrow_account
+                                .provided_potion_mint_authority
                                 .to_account_info(),
                         },
                         &[&[
-                            ctx.accounts.potion_mint.key().as_ref(),
-                            b"potion",
-                            &[potion_token_bump],
+                            ctx.accounts.provided_potion_mint.key().as_ref(),
+                            &[123],
                         ]],
                     ),
                     1,
                 )?;
-                // Close the escrow account
-                anchor_spl::token::close_account(CpiContext::new_with_signer(
-                    ctx.accounts.token_program.to_account_info(),
-                    anchor_spl::token::CloseAccount {
-                        account: ctx
-                            .accounts
-                            .potion_escrow_account
-                            .to_account_info(),
-                        destination: ctx.accounts.user.to_account_info(),
-                        authority: ctx
-                            .accounts
-                            .potion_escrow_account
-                            .to_account_info(),
-                    },
-                    &[&[
-                        ctx.accounts.potion_mint.key().as_ref(),
-                        b"potion",
-                        &[potion_token_bump],
-                    ]],
-                ))?;
             }
         }
         if entered_explorer_data.provided_gear_burned {
@@ -240,13 +203,13 @@ pub struct ClaimHunt<'info> {
 
         } else if entered_explorer_data.provided_gear_kept {
             // Transfer the user's original gear back to their associated account
-            anchor_spl::token::transfer(
+            anchor_spl::token::mint_to(
                 CpiContext::new_with_signer(
                     ctx.accounts.token_program.to_account_info(),
-                    anchor_spl::token::Transfer {
-                        from: ctx
+                    anchor_spl::token::MintTo {
+                        mint: ctx
                             .accounts
-                            .provided_gear_escrow_account
+                            .provided_gear_pda
                             .to_account_info(),
                         to: ctx
                             .accounts
@@ -254,37 +217,16 @@ pub struct ClaimHunt<'info> {
                             .to_account_info(),
                         authority: ctx
                             .accounts
-                            .provided_gear_escrow_account
+                            .provided_gear_pda
                             .to_account_info(),
                     },
                     &[&[
-                        ctx.accounts.provided_gear_mint.key().as_ref(),
-                        b"gear",
-                        &[gear_token_bump],
+                        crate::MINT_AUTH.seed,
+                        &[crate::MINT_AUTH.bump],
                     ]],
                 ),
                 1,
             )?;
-            // Close the escrow account
-            anchor_spl::token::close_account(CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                anchor_spl::token::CloseAccount {
-                    account: ctx
-                        .accounts
-                        .provided_gear_escrow_account
-                        .to_account_info(),
-                    destination: ctx.accounts.user.to_account_info(),
-                    authority: ctx
-                        .accounts
-                        .provided_gear_escrow_account
-                        .to_account_info(),
-                },
-                &[&[
-                    ctx.accounts.provided_gear_mint.key().as_ref(),
-                    b"gear",
-                    &[gear_token_bump],
-                ]],
-            ))?;
         }
         if entered_explorer_data.won_combat_gear {
             // Transfer the user's won gear to their new associated account
@@ -294,7 +236,7 @@ pub struct ClaimHunt<'info> {
                     anchor_spl::token::Transfer {
                         from: ctx
                             .accounts
-                            .combat_reward_escrow_account
+                            .combat_reward_pda
                             .to_account_info(),
                         to: ctx
                             .accounts
@@ -302,49 +244,53 @@ pub struct ClaimHunt<'info> {
                             .to_account_info(),
                         authority: ctx
                             .accounts
-                            .combat_reward_escrow_account
+                            .combat_reward_pda
                             .to_account_info(),
                     },
                     &[&[
                         ctx.accounts.combat_reward_gear_mint.key().as_ref(),
-                        b"gear",
-                        &[combat_reward_gear_token_bump],
+                        &[123],
                     ]],
                 ),
                 1,
             )?;
-            // Close the escrow account
-            anchor_spl::token::close_account(CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                anchor_spl::token::CloseAccount {
-                    account: ctx
-                        .accounts
-                        .combat_reward_escrow_account
-                        .to_account_info(),
-                    // TODO should this be sent to the claiming user or to the program
-                    destination: ctx.accounts.user.to_account_info(),
-                    authority: ctx
-                        .accounts
-                        .combat_reward_escrow_account
-                        .to_account_info(),
-                },
-                &[&[
-                    ctx.accounts.combat_reward_gear_mint.key().as_ref(),
-                    b"gear",
-                    &[combat_reward_gear_token_bump],
-                ]],
-            ))?;
         }
         if entered_explorer_data.found_treasure {
-            // Mint treasure of type entered_explorer_data.treasure_type_mint
-            
+            // TODO If they found grail it has to be unique mint code here
+                // Also do special logic if grail using entered_explorer_data.grail_reward_in_ust
 
-            // Do special logic if grail using entered_explorer_data.grail_reward_in_ust
+            // If any other, transfer from pda
+            anchor_spl::token::transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.token_program.to_account_info(),
+                    anchor_spl::token::Transfer {
+                        from: ctx
+                            .accounts
+                            .treasure_pda
+                            .to_account_info(),
+                        to: ctx
+                            .accounts
+                            .user_associated_treasure_account
+                            .to_account_info(),
+                        authority: ctx
+                            .accounts
+                            .treasure_pda
+                            .to_account_info(),
+                    },
+                    &[&[
+                        ctx.accounts.treasure_mint.key().as_ref(),
+                        // TODO all these need to be determined by above mints (getBump(treasure_mint) or similar)
+                        &[123],
+                    ]],
+                ),
+                1,
+            )?;
+
         }
         // Finally, update state account to remove the row.
-        state_vec.remove(relevant_vec_entry_index);
+        state_account.hunt_state_vec.remove(relevant_vec_entry_index);
 
-        // todo make sure we close every single escrow account.
+        // todo confirm we're closing all necessary accounts single escrow account.
         
         Ok(())
     }
