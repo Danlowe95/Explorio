@@ -78,7 +78,7 @@ pub fn handler(
     ctx: Context<InitializeProgram>, 
     state_account_bump: u8, 
     program_ust_account_bump: u8,
-) -> ProgramResult {
+) -> ProgramResult 
     let state_account = &mut ctx.accounts.state_account;
     // state_account.gears = [ctx.accounts.gear_1_mint.key()];
     // state_account.potions = [ctx.accounts.potion_1_mint.key()];

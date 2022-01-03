@@ -14,6 +14,8 @@ pub struct HuntState {
 }
 // recalc
 // 32 + 32 + 32 + 32 + 32 + (1 * 3) + (1 * 7) + 64 = 234 (fewer without grail_reward)
+
+// 32 + 1 + 1 +1 + (1 * 7) + 1 + 1 + 64 = 44 + 64 = 108
 // #[account]
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct EnteredExplorer {

@@ -26,13 +26,23 @@ describe("anchor-test", () => {
   before(async () => {
     wallet = program.provider.wallet as NodeWallet;
 
+    ustMint = await spl.Token.createMint(
+      program.provider.connection,
+      wallet.payer,
+      wallet.publicKey,
+      wallet.publicKey,
+      0,
+      spl.TOKEN_PROGRAM_ID
+    );
+
     const [mintAuthorityPda, mintAuthorityPdaBump] =
       await anchor.web3.PublicKey.findProgramAddress(
         [Buffer.from("mint_auth", "utf-8")],
         program.programId
       );
 
-    ustMint: spl.Token = await spl.Token.createMint(
+
+    explorerMint = await spl.Token.createMint(
       program.provider.connection,
       wallet.payer,
       wallet.publicKey,
@@ -40,7 +50,7 @@ describe("anchor-test", () => {
       0,
       spl.TOKEN_PROGRAM_ID
     );
-    explorerMint: spl.Token = await spl.Token.createMint(
+    gearMint = await spl.Token.createMint(
       program.provider.connection,
       wallet.payer,
       wallet.publicKey,
@@ -48,15 +58,7 @@ describe("anchor-test", () => {
       0,
       spl.TOKEN_PROGRAM_ID
     );
-    gearMint: spl.Token = await spl.Token.createMint(
-      program.provider.connection,
-      wallet.payer,
-      wallet.publicKey,
-      wallet.publicKey,
-      0,
-      spl.TOKEN_PROGRAM_ID
-    );
-    potionMint: spl.Token = await spl.Token.createMint(
+    potionMint = await spl.Token.createMint(
       program.provider.connection,
       wallet.payer,
       wallet.publicKey,
@@ -65,19 +67,19 @@ describe("anchor-test", () => {
       spl.TOKEN_PROGRAM_ID
     );
 
-    fakeUserExplorerAccount: anchor.web3.PublicKey =
+    fakeUserExplorerAccount =
       await explorerMint.createAssociatedTokenAccount(
         program.provider.wallet.publicKey
       );
-    fakeUserUstAccount: anchor.web3.PublicKey =
+    fakeUserUstAccount =
       await ustMint.createAssociatedTokenAccount(
         program.provider.wallet.publicKey
       );
-    fakeUserGearAccount: anchor.web3.PublicKey =
+    fakeUserGearAccount =
       await gearMint.createAssociatedTokenAccount(
         program.provider.wallet.publicKey
       );
-    fakeUserPotionAccount: anchor.web3.PublicKey =
+    fakeUserPotionAccount =
       await potionMint.createAssociatedTokenAccount(
         program.provider.wallet.publicKey
       );
@@ -121,6 +123,7 @@ describe("anchor-test", () => {
     );
   });
   it("Is initialized!", async () => {
+
     const [stateAccount, stateAccountBump] =
       await anchor.web3.PublicKey.findProgramAddress(
         [Buffer.from("state", "utf-8")],
@@ -132,21 +135,21 @@ describe("anchor-test", () => {
         program.programId
       );
 
-    await program.rpc.initializeProgram({
-      stateAccountBump,
+    await program.rpc.initializeProgram(
+        stateAccountBump,
       programUstAccountBump,
-      accounts: {
+      {accounts: {
         owner: provider.wallet.publicKey,
         stateAccount: stateAccount,
         programUstAccount: programUstAccount,
-        ustMint: ustMint,
+        ustMint: ustMint.publicKey,
         tokenProgram: spl.TOKEN_PROGRAM_ID,
         associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       },
       signers: [],
-    });
+      });
     const state_account = await program.provider.connection.getAccountInfo(
       stateAccount
     );
