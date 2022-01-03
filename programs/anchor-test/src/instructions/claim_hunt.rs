@@ -4,23 +4,14 @@ use crate::state::{HuntState};
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use anchor_spl::associated_token::{AssociatedToken};
 
-
-// todo bump wasn't intended to be passed in - pulled from huntState
-// that requires deserialization and lookup on frontend
-// would need to pass in bumps for ALL escrow accounts unless better way found.
 #[derive(Accounts)]
 #[instruction(
      explorer_token_bump: u8, 
-    // gear_token_bump: u8, 
-    // potion_token_bump: u8,
-    // combat_reward_gear_token_bump: u8,
-    // state_account_bump: u8,
 )]
 pub struct ClaimHunt<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
     // Start - the associated accounts of the user for all potential claimables.
-    // TODO may need init_if_needed and payer on all of these.
     #[account(
         init_if_needed,
         payer = user,
@@ -38,7 +29,7 @@ pub struct ClaimHunt<'info> {
     #[account(
         init_if_needed,
         payer = user,
-        associated_token::mint = combat_reward_gear_mint,
+        associated_token::mint = combat_reward_mint,
         associated_token::authority = user
     )]
     pub user_associated_combat_reward_account: Box<Account<'info, TokenAccount>>,
@@ -64,28 +55,21 @@ pub struct ClaimHunt<'info> {
     )]
     pub user_associated_ust_account: Box<Account<'info, TokenAccount>>,
 
-    // Start - All escrow accounts that are currently holding claimables to transfer.
     #[account( 
         mut,
         seeds = [explorer_mint.key().as_ref(), b"explorer"],
         bump = explorer_token_bump, 
     )]
     pub explorer_escrow_account: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub provided_gear_pda: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub provided_potion_mint_authority: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub combat_reward_pda: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub treasure_pda: Box<Account<'info, TokenAccount>>,
+
+    pub mint_auth_pda: Box<Account<'info, TokenAccount>>,
 
     // Start - All mints for potential claimables
     pub explorer_mint: Box<Account<'info, Mint>>,
     pub provided_gear_mint: Box<Account<'info, Mint>>,
     pub provided_potion_mint: Box<Account<'info, Mint>>,
     // To be grabbed by the frontend from state and passed through
-    pub combat_reward_gear_mint: Box<Account<'info, Mint>>,
+    pub combat_reward_mint: Box<Account<'info, Mint>>,
     pub treasure_mint: Box<Account<'info, Mint>>,
     pub ust_mint: Box<Account<'info, Mint>>,
 
@@ -100,12 +84,7 @@ pub struct ClaimHunt<'info> {
 }
     // Allow user to reclaim explorer NFT
     pub fn handler(
-        ctx: Context<ClaimHunt>,     
-        // explorer_token_bump: u8, 
-        // gear_token_bump: u8, 
-        // potion_token_bump: u8,
-        // combat_reward_gear_token_bump: u8,
-        // state_account_bump: u8
+        ctx: Context<ClaimHunt>,
     ) -> ProgramResult {
         let state_account = &mut ctx.accounts.state_account;
 
@@ -114,10 +93,76 @@ pub struct ClaimHunt<'info> {
         // TODO improve this search to be secure
         let relevant_vec_entry_index = state_account.hunt_state_vec.iter().position(|x| x.explorer_escrow_account == explorer_escrow_account.key()).unwrap();
         let entered_explorer_data = &state_account.hunt_state_vec[relevant_vec_entry_index];
-        
+
         if entered_explorer_data.has_hunted == false {
             return Err(crate::ErrorCode::HasNotHunted.into());
         }
+
+        let mut provided_gear_triple: Option<&crate::MintInfo> = None;
+        // Confirm that the provided_gear_mint is a valid gear mint, and that it matches the gear_mint_id in state
+        for entry in crate::GEAR_MINTS.iter() {
+            if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() &&
+                &entry.id == &entered_explorer_data.provided_gear_mint_id {
+                provided_gear_triple = Some(entry);
+                break;
+            }
+        }
+        match provided_gear_triple {
+            None => return Err(crate::ErrorCode::BadMintProvided.into()),
+            _ => ()
+        }
+
+        let mut provided_potion_triple: Option<&crate::MintInfo> = None;
+        // Confirm that the provided_potion_mint is a valid potion mint, and that it matches the provided_potion_mint_id in state
+        if entered_explorer_data.provided_potion {
+            for entry in crate::POTION_MINTS.iter() {
+                if &entry.mint == &ctx.accounts.provided_potion_mint.key().to_string().as_str() &&
+                    &entry.id == &entered_explorer_data.provided_potion_mint_id.unwrap() {
+                    provided_potion_triple = Some(entry);
+                    break;
+                }
+            }
+            match provided_potion_triple {
+                None => return Err(crate::ErrorCode::BadMintProvided.into()),
+                _ => ()
+            }
+        }
+
+
+        let mut combat_reward_triple: Option<&crate::MintInfo> = None;
+        // Confirm that the combat_reward_mint is a valid gear mint, and that it matches the state
+        if entered_explorer_data.won_combat_gear {
+            for entry in crate::GEAR_MINTS.iter() {
+                if &entry.mint == &ctx.accounts.combat_reward_mint.key().to_string().as_str() &&
+                    &entry.id == &entered_explorer_data.combat_reward_mint_id.unwrap() {
+                    combat_reward_triple = Some(entry);
+                    break;
+                }
+            }
+            match combat_reward_triple {
+                None => return Err(crate::ErrorCode::BadMintProvided.into()),
+                _ => ()
+            }
+        }
+        
+        let mut treasure_reward_triple: Option<&crate::MintInfo> = None;
+        // Confirm that the treasure_mint_id is a valid gear mint, and that it matches the state
+        if entered_explorer_data.found_treasure {
+            for entry in crate::GEAR_MINTS.iter() {
+                if &entry.mint == &ctx.accounts.treasure_mint.key().to_string().as_str() &&
+                    &entry.id == &entered_explorer_data.treasure_mint_id.unwrap() {
+                    treasure_reward_triple = Some(entry);
+                    break;
+                }
+            }
+            match treasure_reward_triple {
+                None => return Err(crate::ErrorCode::BadMintProvided.into()),
+                _ => ()
+            }
+        }
+        
+
+
         // Transfer the user's explorer token back to their assoc. account.
         anchor_spl::token::transfer(
             CpiContext::new_with_signer(
@@ -161,17 +206,16 @@ pub struct ClaimHunt<'info> {
             },
             &[&[
                 ctx.accounts.explorer_mint.key().as_ref(),
+                ctx.accounts.user.key().as_ref(), 
                 b"explorer",
                 &[entered_explorer_data.explorer_escrow_bump],
             ]],
         ))?;
         if entered_explorer_data.provided_potion {
             if entered_explorer_data.used_potion {
-                // Burn and close escrow
+                // No outcome
             } else {
-                // TODO get bump for provided potion by iterating over POTION_MINTS
-                // to get the right tuple
-                // Transfer the user's potion back to their assoc. account.
+                // Mint the user's potion back to their assoc. account.
                 anchor_spl::token::mint_to(
                     CpiContext::new_with_signer(
                         ctx.accounts.token_program.to_account_info(),
@@ -183,12 +227,12 @@ pub struct ClaimHunt<'info> {
                                 .to_account_info(),
                             authority: ctx
                                 .accounts
-                                .provided_potion_mint_authority
+                                .mint_auth_pda
                                 .to_account_info(),
                         },
                         &[&[
-                            ctx.accounts.provided_potion_mint.key().as_ref(),
-                            &[123],
+                            crate::MINT_AUTH.seed,
+                            &[crate::MINT_AUTH.bump],
                         ]],
                     ),
                     1,
@@ -209,7 +253,7 @@ pub struct ClaimHunt<'info> {
                     anchor_spl::token::MintTo {
                         mint: ctx
                             .accounts
-                            .provided_gear_pda
+                            .provided_gear_mint
                             .to_account_info(),
                         to: ctx
                             .accounts
@@ -217,7 +261,7 @@ pub struct ClaimHunt<'info> {
                             .to_account_info(),
                         authority: ctx
                             .accounts
-                            .provided_gear_pda
+                            .mint_auth_pda
                             .to_account_info(),
                     },
                     &[&[
@@ -230,13 +274,13 @@ pub struct ClaimHunt<'info> {
         }
         if entered_explorer_data.won_combat_gear {
             // Transfer the user's won gear to their new associated account
-            anchor_spl::token::transfer(
+            anchor_spl::token::mint_to(
                 CpiContext::new_with_signer(
                     ctx.accounts.token_program.to_account_info(),
-                    anchor_spl::token::Transfer {
-                        from: ctx
+                    anchor_spl::token::MintTo {
+                        mint: ctx
                             .accounts
-                            .combat_reward_pda
+                            .combat_reward_mint
                             .to_account_info(),
                         to: ctx
                             .accounts
@@ -244,12 +288,12 @@ pub struct ClaimHunt<'info> {
                             .to_account_info(),
                         authority: ctx
                             .accounts
-                            .combat_reward_pda
+                            .mint_auth_pda
                             .to_account_info(),
                     },
                     &[&[
-                        ctx.accounts.combat_reward_gear_mint.key().as_ref(),
-                        &[123],
+                        crate::MINT_AUTH.seed,
+                        &[crate::MINT_AUTH.bump],
                     ]],
                 ),
                 1,
@@ -260,13 +304,13 @@ pub struct ClaimHunt<'info> {
                 // Also do special logic if grail using entered_explorer_data.grail_reward_in_ust
 
             // If any other, transfer from pda
-            anchor_spl::token::transfer(
+            anchor_spl::token::mint_to(
                 CpiContext::new_with_signer(
                     ctx.accounts.token_program.to_account_info(),
-                    anchor_spl::token::Transfer {
-                        from: ctx
+                    anchor_spl::token::MintTo {
+                        mint: ctx
                             .accounts
-                            .treasure_pda
+                            .treasure_mint
                             .to_account_info(),
                         to: ctx
                             .accounts
@@ -274,13 +318,12 @@ pub struct ClaimHunt<'info> {
                             .to_account_info(),
                         authority: ctx
                             .accounts
-                            .treasure_pda
+                            .mint_auth_pda
                             .to_account_info(),
                     },
                     &[&[
-                        ctx.accounts.treasure_mint.key().as_ref(),
-                        // TODO all these need to be determined by above mints (getBump(treasure_mint) or similar)
-                        &[123],
+                        crate::MINT_AUTH.seed,
+                        &[crate::MINT_AUTH.bump],
                     ]],
                 ),
                 1,

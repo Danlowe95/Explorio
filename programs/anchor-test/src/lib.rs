@@ -6,20 +6,19 @@ use instructions::*;
 
 declare_id!("69v7eiACV758WzGopNQN8s5WRG5TcTSF4nexNP8F5p7d");
 
-struct MintInfo<'a> {
+struct MintInfo{
     id: u8,
-    mint: &'a str,
-    bump: u8
+    mint: &'static str,
 }
 const GEAR_MINTS: [MintInfo; 1] = [
-    MintInfo{ id: 1, mint: "kithbUj3JCAJYFU7A1vcMAhDdvQ8EheWSCkRwkhLj2s", bump: 123}
+    MintInfo{ id: 1, mint: "kithbUj3JCAJYFU7A1vcMAhDdvQ8EheWSCkRwkhLj2s"}
 ];
 const POTION_MINTS: [MintInfo; 1] = [
-    MintInfo{ id: 1, mint: "4NkMX1SSsMRKnBwVakuAqv5rVipjhuqT3a17m7wPvPLE", bump: 123}
+    MintInfo{ id: 1, mint: "4NkMX1SSsMRKnBwVakuAqv5rVipjhuqT3a17m7wPvPLE"}
 ];
 
-struct MintAuth<'a> {
-    seed: &'a [u8], 
+struct MintAuth {
+    seed: &'static [u8], 
     bump: u8 
 }
 const MINT_AUTH: MintAuth = MintAuth{seed: b"mint_auth", bump: 123};

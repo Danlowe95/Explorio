@@ -73,7 +73,7 @@ pub struct EnterHunt<'info> {
         // state_account_bump: u8
     ) -> ProgramResult {
         // Verify provided gear/potion accounts are valid mints for their roles
-        let mut gear_triple: Option<crate::MintInfo> = None;
+        let mut gear_triple: Option<&crate::MintInfo> = None;
         for entry in crate::GEAR_MINTS.iter() {
             if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() {
                 gear_triple = Some(entry);

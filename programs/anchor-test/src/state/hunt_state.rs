@@ -33,7 +33,7 @@ pub struct EnteredExplorer {
     pub found_treasure: bool,
     pub used_potion: bool,
 
-    pub combat_reward_mint_id: Option<Pubkey>,
+    pub combat_reward_mint_id: Option<u8>,
     // pub combat_reward_escrow_bump: Option<u8>,
 
     pub treasure_mint_id: Option<u8>, // special logic baked in for grail
