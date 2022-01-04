@@ -86,19 +86,19 @@ pub struct ClaimHunt<'info> {
     pub fn handler(
         ctx: Context<ClaimHunt>,
     ) -> ProgramResult {
-        let state_account = &mut ctx.accounts.state_account.load_mut()?;
-        // TODO this ptr referencing stuff feels really sus. is it actualyl writing at the end?
-        let hunt_state_arr_ptr = std::ptr::addr_of!(state_account.hunt_state_arr);
-        let mut hunt_state_arr = unsafe { hunt_state_arr_ptr.read_unaligned() };
+        let mut state_account = ctx.accounts.state_account.load_mut()?;
+        // TODO this ptr referencing stuff feels really sus.
+        // let hunt_state_arr_ptr = std::ptr::addr_of!(state_account.hunt_state_arr);
+        // let mut hunt_state_arr = unsafe { hunt_state_arr_ptr.read_unaligned() };
 
         let explorer_escrow_account = &mut ctx.accounts.explorer_escrow_account;
         // position returns the index
         // TODO improve this search to be secure
-        let relevent_arr_index = hunt_state_arr.iter().position(|x| {
+        let relevent_arr_index = state_account.hunt_state_arr.iter().position(|x| {
             return x.is_some() && x.unwrap().explorer_escrow_account == explorer_escrow_account.key()
         }).unwrap();
 
-        let entered_explorer_data = &hunt_state_arr[relevent_arr_index].unwrap();
+        let entered_explorer_data = &state_account.hunt_state_arr[relevent_arr_index].unwrap();
 
         if entered_explorer_data.has_hunted == false {
             return Err(crate::ErrorCode::HasNotHunted.into());
@@ -337,7 +337,7 @@ pub struct ClaimHunt<'info> {
 
         }
         // Finally, update state account to remove the row.
-        hunt_state_arr[relevent_arr_index] = None;
+        state_account.hunt_state_arr[relevent_arr_index] = None;
 
         // todo confirm we're closing all necessary accounts single escrow account.
         

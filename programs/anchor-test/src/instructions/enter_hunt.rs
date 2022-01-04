@@ -139,16 +139,16 @@ pub struct EnterHunt<'info> {
         //     1,
         // )?;
 
-        let state_account = &mut ctx.accounts.state_account.load_mut()?;
-        let hunt_state_arr_ptr = std::ptr::addr_of!(state_account.hunt_state_arr);
-        let mut hunt_state_arr = unsafe { hunt_state_arr_ptr.read_unaligned() };
+        let mut state_account = ctx.accounts.state_account.load_mut()?;
+        // let hunt_state_arr_ptr = std::ptr::addr_of!(state_account.hunt_state_arr);
+        // let mut hunt_state_arr = unsafe { hunt_state_arr_ptr.read_unaligned() };
 
-        if hunt_state_arr.iter().all(|x| x.is_some()) {
+        if state_account.hunt_state_arr.iter().all(|x| x.is_some()) {
             return Err(crate::ErrorCode::StateArrFull.into());
         }
-        let open_index = hunt_state_arr.iter().position(|x| x.is_none()).unwrap();
+        let open_index = state_account.hunt_state_arr.iter().position(|x| x.is_none()).unwrap();
         // Set all necessary data in the hunt state 
-        hunt_state_arr[open_index] = Some(EnteredExplorer {
+        state_account.hunt_state_arr[open_index] = Some(EnteredExplorer {
             explorer_escrow_account: ctx.accounts.explorer_escrow_account.key(),
             provided_gear_mint_id: gear_triple.unwrap().id,
             provided_potion_mint_id: None, // ctx.accounts.provided_potion_mint.key(),

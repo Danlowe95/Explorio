@@ -32,13 +32,13 @@ pub struct ProcessHunt<'info> {
 // Run the hunt - only owner can run it for now
 pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
     // Walk the state vec and do some basic stub processing
-    let state_account = &mut ctx.accounts.state_account.load_mut()?;
-    let hunt_state_arr_ptr = std::ptr::addr_of!(state_account.hunt_state_arr);
-    let mut hunt_state_arr = unsafe { hunt_state_arr_ptr.read_unaligned() };
+    let mut state_account = ctx.accounts.state_account.load_mut()?;
+    // let hunt_state_arr_ptr = std::ptr::addr_of!(state_account.hunt_state_arr);
+    // let mut hunt_state_arr = unsafe { hunt_state_arr_ptr.read_unaligned() };
 
     // position returns the index
     // TODO improve this search to be secure
-    for entry in &mut hunt_state_arr.iter_mut() {
+    for entry in state_account.hunt_state_arr.iter_mut() {
         // Access the value inside the Option
         for mut_entry in entry.as_mut() {
             mut_entry.has_hunted = true;
