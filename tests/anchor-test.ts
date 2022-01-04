@@ -41,7 +41,6 @@ describe("anchor-test", () => {
         program.programId
       );
 
-
     explorerMint = await spl.Token.createMint(
       program.provider.connection,
       wallet.payer,
@@ -67,22 +66,18 @@ describe("anchor-test", () => {
       spl.TOKEN_PROGRAM_ID
     );
 
-    fakeUserExplorerAccount =
-      await explorerMint.createAssociatedTokenAccount(
-        program.provider.wallet.publicKey
-      );
-    fakeUserUstAccount =
-      await ustMint.createAssociatedTokenAccount(
-        program.provider.wallet.publicKey
-      );
-    fakeUserGearAccount =
-      await gearMint.createAssociatedTokenAccount(
-        program.provider.wallet.publicKey
-      );
-    fakeUserPotionAccount =
-      await potionMint.createAssociatedTokenAccount(
-        program.provider.wallet.publicKey
-      );
+    fakeUserExplorerAccount = await explorerMint.createAssociatedTokenAccount(
+      program.provider.wallet.publicKey
+    );
+    fakeUserUstAccount = await ustMint.createAssociatedTokenAccount(
+      program.provider.wallet.publicKey
+    );
+    fakeUserGearAccount = await gearMint.createAssociatedTokenAccount(
+      program.provider.wallet.publicKey
+    );
+    fakeUserPotionAccount = await potionMint.createAssociatedTokenAccount(
+      program.provider.wallet.publicKey
+    );
     await ustMint.mintTo(
       fakeUserUstAccount,
       program.provider.wallet.publicKey,
@@ -123,10 +118,10 @@ describe("anchor-test", () => {
     );
   });
   it("Is initialized!", async () => {
-
-    const [stateAccount, stateAccountBump] =
+    const stateAccount = anchor.web3.Keypair.generate();
+    const [mintAuth, mintAuthBump] =
       await anchor.web3.PublicKey.findProgramAddress(
-        [Buffer.from("state", "utf-8")],
+        [Buffer.from("mint_auth", "utf-8")],
         program.programId
       );
     const [programUstAccount, programUstAccountBump] =
@@ -135,12 +130,10 @@ describe("anchor-test", () => {
         program.programId
       );
 
-    await program.rpc.initializeProgram(
-        stateAccountBump,
-      programUstAccountBump,
-      {accounts: {
+    await program.rpc.initializeProgram(programUstAccountBump, mintAuthBump, {
+      accounts: {
         owner: provider.wallet.publicKey,
-        stateAccount: stateAccount,
+        stateAccount: stateAccount.publicKey,
         programUstAccount: programUstAccount,
         ustMint: ustMint.publicKey,
         tokenProgram: spl.TOKEN_PROGRAM_ID,
@@ -148,13 +141,20 @@ describe("anchor-test", () => {
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       },
-      signers: [],
-      });
-    const state_account = await program.provider.connection.getAccountInfo(
-      stateAccount
+      signers: [stateAccount],
+      instructions: [
+        await program.account.huntState.createInstruction(stateAccount, 280043),
+      ],
+    });
+    const onChainState = await program.provider.connection.getAccountInfo(
+      stateAccount.publicKey
     );
-    const state_data = state_account.data;
-    console.log("test");
+    // let _stateAccount = await program.account.stateAccount.fetch(
+    //   stateAccount.publicKey
+    // );
+    const state_data = onChainState.data;
+    // var textEncoding = require("text-encoding");
+    // console.log(new textEncoding.TextDecoder().decode(state_data));
   });
 
   // const baseAccountLocal = anchor.web3.Keypair.generate();

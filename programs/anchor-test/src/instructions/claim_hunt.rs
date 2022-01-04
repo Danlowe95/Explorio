@@ -75,7 +75,7 @@ pub struct ClaimHunt<'info> {
 
 
     #[account(mut)]
-    pub state_account: Box<Account<'info, HuntState>>,
+    pub state_account: AccountLoader<'info, HuntState>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
@@ -86,13 +86,19 @@ pub struct ClaimHunt<'info> {
     pub fn handler(
         ctx: Context<ClaimHunt>,
     ) -> ProgramResult {
-        let state_account = &mut ctx.accounts.state_account;
+        let state_account = &mut ctx.accounts.state_account.load_mut()?;
+        // TODO this ptr referencing stuff feels really sus. is it actualyl writing at the end?
+        let hunt_state_arr_ptr = std::ptr::addr_of!(state_account.hunt_state_arr);
+        let mut hunt_state_arr = unsafe { hunt_state_arr_ptr.read_unaligned() };
 
         let explorer_escrow_account = &mut ctx.accounts.explorer_escrow_account;
         // position returns the index
         // TODO improve this search to be secure
-        let relevant_vec_entry_index = state_account.hunt_state_vec.iter().position(|x| x.explorer_escrow_account == explorer_escrow_account.key()).unwrap();
-        let entered_explorer_data = &state_account.hunt_state_vec[relevant_vec_entry_index];
+        let relevent_arr_index = hunt_state_arr.iter().position(|x| {
+            return x.is_some() && x.unwrap().explorer_escrow_account == explorer_escrow_account.key()
+        }).unwrap();
+
+        let entered_explorer_data = &hunt_state_arr[relevent_arr_index].unwrap();
 
         if entered_explorer_data.has_hunted == false {
             return Err(crate::ErrorCode::HasNotHunted.into());
@@ -232,7 +238,7 @@ pub struct ClaimHunt<'info> {
                         },
                         &[&[
                             crate::MINT_AUTH.seed,
-                            &[crate::MINT_AUTH.bump],
+                            &[state_account.mint_auth_account_bump],
                         ]],
                     ),
                     1,
@@ -266,7 +272,7 @@ pub struct ClaimHunt<'info> {
                     },
                     &[&[
                         crate::MINT_AUTH.seed,
-                        &[crate::MINT_AUTH.bump],
+                        &[state_account.mint_auth_account_bump],
                     ]],
                 ),
                 1,
@@ -293,7 +299,7 @@ pub struct ClaimHunt<'info> {
                     },
                     &[&[
                         crate::MINT_AUTH.seed,
-                        &[crate::MINT_AUTH.bump],
+                        &[state_account.mint_auth_account_bump],
                     ]],
                 ),
                 1,
@@ -323,7 +329,7 @@ pub struct ClaimHunt<'info> {
                     },
                     &[&[
                         crate::MINT_AUTH.seed,
-                        &[crate::MINT_AUTH.bump],
+                        &[state_account.mint_auth_account_bump],
                     ]],
                 ),
                 1,
@@ -331,7 +337,7 @@ pub struct ClaimHunt<'info> {
 
         }
         // Finally, update state account to remove the row.
-        state_account.hunt_state_vec.remove(relevant_vec_entry_index);
+        hunt_state_arr[relevent_arr_index] = None;
 
         // todo confirm we're closing all necessary accounts single escrow account.
         

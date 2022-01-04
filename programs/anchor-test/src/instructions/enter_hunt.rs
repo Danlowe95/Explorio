@@ -57,7 +57,7 @@ pub struct EnterHunt<'info> {
     // pub provided_potion_mint: Box<Account<'info, Mint>>,
 
     #[account(mut)]
-    pub state_account: Box<Account<'info, HuntState>>,
+    pub state_account: AccountLoader<'info, HuntState>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -139,10 +139,16 @@ pub struct EnterHunt<'info> {
         //     1,
         // )?;
 
-        let state_account = &mut ctx.accounts.state_account;
+        let state_account = &mut ctx.accounts.state_account.load_mut()?;
+        let hunt_state_arr_ptr = std::ptr::addr_of!(state_account.hunt_state_arr);
+        let mut hunt_state_arr = unsafe { hunt_state_arr_ptr.read_unaligned() };
 
+        if hunt_state_arr.iter().all(|x| x.is_some()) {
+            return Err(crate::ErrorCode::StateArrFull.into());
+        }
+        let open_index = hunt_state_arr.iter().position(|x| x.is_none()).unwrap();
         // Set all necessary data in the hunt state 
-        state_account.hunt_state_vec.push(EnteredExplorer {
+        hunt_state_arr[open_index] = Some(EnteredExplorer {
             explorer_escrow_account: ctx.accounts.explorer_escrow_account.key(),
             provided_gear_mint_id: gear_triple.unwrap().id,
             provided_potion_mint_id: None, // ctx.accounts.provided_potion_mint.key(),
@@ -159,7 +165,7 @@ pub struct EnterHunt<'info> {
             found_treasure: false,
             used_potion: false,
             treasure_mint_id: None,
-            grail_reward_in_ust: None,
+            grail_reward_in_ust: 0,
         });
 
         Ok(())

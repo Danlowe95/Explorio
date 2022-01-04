@@ -19,9 +19,8 @@ const POTION_MINTS: [MintInfo; 1] = [
 
 struct MintAuth {
     seed: &'static [u8], 
-    bump: u8 
 }
-const MINT_AUTH: MintAuth = MintAuth{seed: b"mint_auth", bump: 123};
+const MINT_AUTH: MintAuth = MintAuth{seed: b"mint_auth"};
 
 #[error]
 pub enum ErrorCode {
@@ -29,6 +28,10 @@ pub enum ErrorCode {
     BadMintProvided,
     #[msg("Claim is not possible yet as the Explorer has not hunted.")]
     HasNotHunted,
+    #[msg("The program has already been initialized.")]
+    AlreadyInitialized,
+    #[msg("State array is too full to add.")]
+    StateArrFull,
 }
 
 #[program]
