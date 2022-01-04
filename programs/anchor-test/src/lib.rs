@@ -11,10 +11,10 @@ struct MintInfo{
     mint: &'static str,
 }
 const GEAR_MINTS: [MintInfo; 1] = [
-    MintInfo{ id: 1, mint: "kithbUj3JCAJYFU7A1vcMAhDdvQ8EheWSCkRwkhLj2s"}
+    MintInfo{ id: 1, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}
 ];
 const POTION_MINTS: [MintInfo; 1] = [
-    MintInfo{ id: 1, mint: "4NkMX1SSsMRKnBwVakuAqv5rVipjhuqT3a17m7wPvPLE"}
+    MintInfo{ id: 1, mint: "2sHzUbXC5V6r4sn1RYFsK2Ui1rEckUFHBWLKt6SA3tqr"}
 ];
 
 struct MintAuth {

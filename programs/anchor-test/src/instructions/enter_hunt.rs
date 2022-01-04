@@ -8,9 +8,6 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 #[derive(Accounts)]
 #[instruction(
     explorer_token_bump: u8, 
-    // gear_token_bump: u8, 
-    // potion_token_bump: u8,
-    // state_account_bump: u8
 )]
 pub struct EnterHunt<'info> {
     #[account(mut)]
@@ -37,7 +34,7 @@ pub struct EnterHunt<'info> {
     #[account( 
         init, 
         payer = user, 
-        seeds = [explorer_mint.key().as_ref(), user.key().as_ref(), b"explorer"],
+        seeds = [b"explorer", explorer_mint.key().as_ref(), user.key().as_ref(), ],
         bump = explorer_token_bump, 
         token::mint = explorer_mint, 
         token::authority = explorer_escrow_account
@@ -48,6 +45,7 @@ pub struct EnterHunt<'info> {
     // #[account(constraint = {
     //     Pubkey::from_str(crate::GEAR_1_MINT).unwrap() == provided_gear_mint.key()
     // })]
+    #[account(mut)]
     pub provided_gear_mint: Box<Account<'info, Mint>>,
     // #[account(mut, constraint = provided_potion_pda.mint == provided_potion_mint)]
     // pub provided_potion_pda: Box<Account<'info, TokenAccount>>,
@@ -58,6 +56,11 @@ pub struct EnterHunt<'info> {
 
     #[account(mut)]
     pub state_account: AccountLoader<'info, HuntState>,
+    // #[account(
+    //     seeds=[b"mint_auth"],
+    //     bump = state_account.load()?.mint_auth_account_bump
+    // )]
+    pub mint_auth: AccountInfo<'info>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -68,11 +71,12 @@ pub struct EnterHunt<'info> {
     pub fn handler(
         ctx: Context<EnterHunt>,
         explorer_token_bump: u8,
-        // gear_token_bump: u8,
-        // potion_token_bump: u8,
-        // state_account_bump: u8
     ) -> ProgramResult {
+        let mut state_account = ctx.accounts.state_account.load_mut()?;
+
         // Verify provided gear/potion accounts are valid mints for their roles
+        msg!("{}", state_account.mint_auth_account_bump);
+
         let mut gear_triple: Option<&crate::MintInfo> = None;
         for entry in crate::GEAR_MINTS.iter() {
             if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() {
@@ -96,7 +100,6 @@ pub struct EnterHunt<'info> {
         //     return Err(crate::ErrorCode::BadMintProvided.into());
         // }
 
-
         // Transfer the user's explorer token to the escrow account.
         anchor_spl::token::transfer(
             CpiContext::new(
@@ -111,6 +114,7 @@ pub struct EnterHunt<'info> {
             1,
         )?;
 
+        msg!("{}", state_account.mint_auth_account_bump);
         // Transfer the user's gear token to the escrow account.
         anchor_spl::token::burn(
             CpiContext::new(
@@ -124,6 +128,22 @@ pub struct EnterHunt<'info> {
             ),
             1,
         )?;
+        // anchor_spl::token::burn(
+        //     CpiContext::new_with_signer(
+        //         ctx.accounts.token_program.to_account_info(),
+        //         anchor_spl::token::Burn {
+        //             mint: ctx.accounts.provided_gear_mint.to_account_info(),
+        //             to: ctx.accounts.user_provided_gear_associated_account.to_account_info(),
+        //             // The user had to sign from the client
+        //             authority: ctx.accounts.user.to_account_info(),
+        //         },
+        //         &[&[
+        //             b"mint_auth",
+        //             &[state_account.mint_auth_account_bump],
+        //         ]],
+        //     ),
+        //     1,
+        // )?;
 
         // // Transfer the user's potion token to the escrow account.
         // anchor_spl::token::transfer(
@@ -139,7 +159,7 @@ pub struct EnterHunt<'info> {
         //     1,
         // )?;
 
-        let mut state_account = ctx.accounts.state_account.load_mut()?;
+
         // let hunt_state_arr_ptr = std::ptr::addr_of!(state_account.hunt_state_arr);
         // let mut hunt_state_arr = unsafe { hunt_state_arr_ptr.read_unaligned() };
 
