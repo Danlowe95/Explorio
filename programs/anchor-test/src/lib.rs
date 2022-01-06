@@ -22,6 +22,7 @@ struct MintAuth {
 }
 const MINT_AUTH: MintAuth = MintAuth{seed: b"mint_auth"};
 
+
 #[error]
 pub enum ErrorCode {
     #[msg("Bad mint provided.")]
@@ -32,6 +33,8 @@ pub enum ErrorCode {
     AlreadyInitialized,
     #[msg("State array is too full to add.")]
     StateArrFull,
+    #[msg("Bad bump provided.")]
+    BadBumpProvided,
 }
 
 #[program]
@@ -52,7 +55,7 @@ mod anchor_test {
 
     pub fn claim_hunt(
         ctx: Context<ClaimHunt>, 
-        // explorer_token_bump: u8, 
+        explorer_escrow_bump: u8, 
         // gear_token_bump: u8, 
         // potion_token_bump: u8,
         // combat_won_gear_token_bump: u8,
@@ -60,7 +63,7 @@ mod anchor_test {
     ) -> ProgramResult {
         instructions::claim_hunt::handler(
             ctx,
-            // explorer_token_bump, 
+            explorer_escrow_bump, 
             // gear_token_bump, 
             // potion_token_bump,
             // combat_won_gear_token_bump,

@@ -5,7 +5,7 @@ use crate::state::{HuntState};
 #[derive(Accounts)]
 pub struct ProcessHunt<'info> {
     
-    pub user: Signer<'info>,
+    // pub user: Signer<'info>,
     
     #[account(mut)]
     pub state_account: AccountLoader<'info, HuntState>,
@@ -40,12 +40,15 @@ pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
     // TODO improve this search to be secure
     for entry in state_account.hunt_state_arr.iter_mut() {
         // Access the value inside the Option
-        for mut_entry in entry.as_mut() {
-            mut_entry.has_hunted = true;
-            mut_entry.provided_gear_kept = true;
-            mut_entry.won_combat_gear = false;
-            mut_entry.found_treasure = false;
-        }
+        // for mut_entry in entry.as_mut() {
+            if entry.is_empty {
+                continue;
+            }
+            entry.has_hunted = true;
+            entry.provided_gear_kept = true;
+            entry.won_combat_gear = false;
+            entry.found_treasure = false;
+        // }
     }
     // potentially store timestamp in state so this only runs once per 3 hours
 

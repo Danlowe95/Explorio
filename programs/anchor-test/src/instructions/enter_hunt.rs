@@ -56,10 +56,10 @@ pub struct EnterHunt<'info> {
 
     #[account(mut)]
     pub state_account: AccountLoader<'info, HuntState>,
-    // #[account(
-    //     seeds=[b"mint_auth"],
-    //     bump = state_account.load()?.mint_auth_account_bump
-    // )]
+    #[account(
+        seeds=[b"mint_auth"],
+        bump = state_account.load()?.mint_auth_account_bump
+    )]
     pub mint_auth: AccountInfo<'info>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -77,13 +77,13 @@ pub struct EnterHunt<'info> {
         // Verify provided gear/potion accounts are valid mints for their roles
         msg!("{}", state_account.mint_auth_account_bump);
 
-        let mut gear_triple: Option<&crate::MintInfo> = None;
-        for entry in crate::GEAR_MINTS.iter() {
-            if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() {
-                gear_triple = Some(entry);
-                break;
-            }
-        }
+        let mut gear_triple: Option<&crate::MintInfo> = Some(&crate::GEAR_MINTS[0]); // TODO TEMP
+        // for entry in crate::GEAR_MINTS.iter() {
+        //     if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() {
+        //         gear_triple = Some(entry);
+        //         break;
+        //     }
+        // }
         
         match gear_triple {
             None => return Err(crate::ErrorCode::BadMintProvided.into()),
@@ -159,34 +159,30 @@ pub struct EnterHunt<'info> {
         //     1,
         // )?;
 
-
-        // let hunt_state_arr_ptr = std::ptr::addr_of!(state_account.hunt_state_arr);
-        // let mut hunt_state_arr = unsafe { hunt_state_arr_ptr.read_unaligned() };
-
-        if state_account.hunt_state_arr.iter().all(|x| x.is_some()) {
+        if state_account.hunt_state_arr.iter().all(|x| !x.is_empty) {
             return Err(crate::ErrorCode::StateArrFull.into());
         }
-        let open_index = state_account.hunt_state_arr.iter().position(|x| x.is_none()).unwrap();
+        let open_index = state_account.hunt_state_arr.iter().position(|x| x.is_empty).unwrap();
         // Set all necessary data in the hunt state 
-        state_account.hunt_state_arr[open_index] = Some(EnteredExplorer {
+        state_account.hunt_state_arr[open_index] = EnteredExplorer {
+            is_empty: false,
             explorer_escrow_account: ctx.accounts.explorer_escrow_account.key(),
             provided_gear_mint_id: gear_triple.unwrap().id,
-            provided_potion_mint_id: None, // ctx.accounts.provided_potion_mint.key(),
+            provided_potion_mint_id: 0,
             explorer_escrow_bump: explorer_token_bump,
-            // provided_gear_escrow_bump: gear_token_bump,
-            // provided_potion_escrow_bump: None, // potion_token_bump,
             has_hunted: false,
             provided_potion: false,
             provided_gear_burned: false,
             provided_gear_kept: false,
             won_combat_gear: false,
-            combat_reward_mint_id: None,
-            // combat_reward_escrow_bump: None,
+            combat_reward_mint_id: 0,
+          
             found_treasure: false,
             used_potion: false,
-            treasure_mint_id: None,
-            grail_reward_in_ust: 0,
-        });
+            treasure_mint_id: 0,
+            // grail_reward_in_ust: 0,
+        };
 
+        // msg!("{}", state_account.hunt_state_arr[open_index].provided_gear_mint_id);
         Ok(())
     }

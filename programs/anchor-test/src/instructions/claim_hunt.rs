@@ -1,12 +1,12 @@
 use anchor_lang::prelude::*;
 
-use crate::state::{HuntState};
+use crate::state::{HuntState, EnteredExplorer};
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use anchor_spl::associated_token::{AssociatedToken};
 
 #[derive(Accounts)]
 #[instruction(
-     explorer_token_bump: u8, 
+     explorer_escrow_bump: u8, 
 )]
 pub struct ClaimHunt<'info> {
     #[account(mut)]
@@ -47,31 +47,39 @@ pub struct ClaimHunt<'info> {
         associated_token::authority = user
     )]
     pub user_associated_treasure_account: Box<Account<'info, TokenAccount>>,
-    #[account(
-        init_if_needed,
-        payer = user,
-        associated_token::mint = ust_mint,
-        associated_token::authority = user
-    )]
-    pub user_associated_ust_account: Box<Account<'info, TokenAccount>>,
+    // #[account(
+    //     init_if_needed,
+    //     payer = user,
+    //     associated_token::mint = ust_mint,
+    //     associated_token::authority = user
+    // )]
+    // pub user_associated_ust_account: Box<Account<'info, TokenAccount>>,
 
     #[account( 
         mut,
-        seeds = [explorer_mint.key().as_ref(), b"explorer"],
-        bump = explorer_token_bump, 
+        seeds = [b"explorer", explorer_mint.key().as_ref(), user.key().as_ref(), ],
+        bump = explorer_escrow_bump, 
     )]
     pub explorer_escrow_account: Box<Account<'info, TokenAccount>>,
 
-    pub mint_auth_pda: Box<Account<'info, TokenAccount>>,
+    #[account(
+        seeds=[b"mint_auth"],
+        bump = state_account.load()?.mint_auth_account_bump
+    )]
+    pub mint_auth_pda: AccountInfo<'info>,
 
     // Start - All mints for potential claimables
     pub explorer_mint: Box<Account<'info, Mint>>,
+    #[account(mut)]
     pub provided_gear_mint: Box<Account<'info, Mint>>,
+    #[account(mut)]
     pub provided_potion_mint: Box<Account<'info, Mint>>,
     // To be grabbed by the frontend from state and passed through
+    #[account(mut)]
     pub combat_reward_mint: Box<Account<'info, Mint>>,
+    #[account(mut)]
     pub treasure_mint: Box<Account<'info, Mint>>,
-    pub ust_mint: Box<Account<'info, Mint>>,
+    // pub ust_mint: Box<Account<'info, Mint>>,
 
 
     #[account(mut)]
@@ -85,6 +93,7 @@ pub struct ClaimHunt<'info> {
     // Allow user to reclaim explorer NFT
     pub fn handler(
         ctx: Context<ClaimHunt>,
+        explorer_escrow_bump: u8,
     ) -> ProgramResult {
         let mut state_account = ctx.accounts.state_account.load_mut()?;
         // TODO this ptr referencing stuff feels really sus.
@@ -95,35 +104,40 @@ pub struct ClaimHunt<'info> {
         // position returns the index
         // TODO improve this search to be secure
         let relevent_arr_index = state_account.hunt_state_arr.iter().position(|x| {
-            return x.is_some() && x.unwrap().explorer_escrow_account == explorer_escrow_account.key()
+            return !x.is_empty && x.explorer_escrow_account == explorer_escrow_account.key()
         }).unwrap();
 
-        let entered_explorer_data = &state_account.hunt_state_arr[relevent_arr_index].unwrap();
+        let entered_explorer_data = &state_account.hunt_state_arr[relevent_arr_index];
 
         if entered_explorer_data.has_hunted == false {
             return Err(crate::ErrorCode::HasNotHunted.into());
         }
+        if entered_explorer_data.explorer_escrow_bump != explorer_escrow_bump {
+            return Err(crate::ErrorCode::BadBumpProvided.into());
+        }
 
-        let mut provided_gear_triple: Option<&crate::MintInfo> = None;
+        // let mut provided_gear_triple: Option<&crate::MintInfo> = None;
+        let mut provided_gear_triple: Option<&crate::MintInfo> = Some(&crate::GEAR_MINTS[0]); // TODO TEMP
+
         // Confirm that the provided_gear_mint is a valid gear mint, and that it matches the gear_mint_id in state
-        for entry in crate::GEAR_MINTS.iter() {
-            if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() &&
-                &entry.id == &entered_explorer_data.provided_gear_mint_id {
-                provided_gear_triple = Some(entry);
-                break;
-            }
-        }
-        match provided_gear_triple {
-            None => return Err(crate::ErrorCode::BadMintProvided.into()),
-            _ => ()
-        }
+        // for entry in crate::GEAR_MINTS.iter() {
+        //     if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() &&
+        //         &entry.id == &entered_explorer_data.provided_gear_mint_id {
+        //         provided_gear_triple = Some(entry);
+        //         break;
+        //     }
+        // }
+        // match provided_gear_triple {
+        //     None => return Err(crate::ErrorCode::BadMintProvided.into()),
+        //     _ => ()
+        // }
 
         let mut provided_potion_triple: Option<&crate::MintInfo> = None;
         // Confirm that the provided_potion_mint is a valid potion mint, and that it matches the provided_potion_mint_id in state
         if entered_explorer_data.provided_potion {
             for entry in crate::POTION_MINTS.iter() {
                 if &entry.mint == &ctx.accounts.provided_potion_mint.key().to_string().as_str() &&
-                    &entry.id == &entered_explorer_data.provided_potion_mint_id.unwrap() {
+                    &entry.id == &entered_explorer_data.provided_potion_mint_id {
                     provided_potion_triple = Some(entry);
                     break;
                 }
@@ -135,28 +149,30 @@ pub struct ClaimHunt<'info> {
         }
 
 
-        let mut combat_reward_triple: Option<&crate::MintInfo> = None;
+        // let mut combat_reward_triple: Option<&crate::MintInfo> = None;
+        let mut combat_reward_triple: Option<&crate::MintInfo> = Some(&crate::GEAR_MINTS[0]); // TODO TEMP
+
         // Confirm that the combat_reward_mint is a valid gear mint, and that it matches the state
-        if entered_explorer_data.won_combat_gear {
-            for entry in crate::GEAR_MINTS.iter() {
-                if &entry.mint == &ctx.accounts.combat_reward_mint.key().to_string().as_str() &&
-                    &entry.id == &entered_explorer_data.combat_reward_mint_id.unwrap() {
-                    combat_reward_triple = Some(entry);
-                    break;
-                }
-            }
-            match combat_reward_triple {
-                None => return Err(crate::ErrorCode::BadMintProvided.into()),
-                _ => ()
-            }
-        }
+        // if entered_explorer_data.won_combat_gear {
+        //     for entry in crate::GEAR_MINTS.iter() {
+        //         if &entry.mint == &ctx.accounts.combat_reward_mint.key().to_string().as_str() &&
+        //             &entry.id == &entered_explorer_data.combat_reward_mint_id {
+        //             combat_reward_triple = Some(entry);
+        //             break;
+        //         }
+        //     }
+        //     match combat_reward_triple {
+        //         None => return Err(crate::ErrorCode::BadMintProvided.into()),
+        //         _ => ()
+        //     }
+        // }
         
         let mut treasure_reward_triple: Option<&crate::MintInfo> = None;
         // Confirm that the treasure_mint_id is a valid gear mint, and that it matches the state
         if entered_explorer_data.found_treasure {
             for entry in crate::GEAR_MINTS.iter() {
                 if &entry.mint == &ctx.accounts.treasure_mint.key().to_string().as_str() &&
-                    &entry.id == &entered_explorer_data.treasure_mint_id.unwrap() {
+                    &entry.id == &entered_explorer_data.treasure_mint_id {
                     treasure_reward_triple = Some(entry);
                     break;
                 }
@@ -167,8 +183,6 @@ pub struct ClaimHunt<'info> {
             }
         }
         
-
-
         // Transfer the user's explorer token back to their assoc. account.
         anchor_spl::token::transfer(
             CpiContext::new_with_signer(
@@ -188,9 +202,9 @@ pub struct ClaimHunt<'info> {
                         .to_account_info(),
                 },
                 &[&[
+                    b"explorer",
                     ctx.accounts.explorer_mint.key().as_ref(),
                     ctx.accounts.user.key().as_ref(), 
-                    b"explorer",
                     &[entered_explorer_data.explorer_escrow_bump],
                 ]],
             ),
@@ -211,9 +225,9 @@ pub struct ClaimHunt<'info> {
                     .to_account_info(),
             },
             &[&[
+                b"explorer",
                 ctx.accounts.explorer_mint.key().as_ref(),
                 ctx.accounts.user.key().as_ref(), 
-                b"explorer",
                 &[entered_explorer_data.explorer_escrow_bump],
             ]],
         ))?;
@@ -337,7 +351,29 @@ pub struct ClaimHunt<'info> {
 
         }
         // Finally, update state account to remove the row.
-        state_account.hunt_state_arr[relevent_arr_index] = None;
+        // update: well, not really remove, because anchor decoding doesn't work with options.
+        // set it to a mostly-null struct with `is_empty: true`. Hopefully this can be improved in the future.
+        // https://github.com/project-serum/anchor/issues/1241
+        state_account.hunt_state_arr[relevent_arr_index] = EnteredExplorer {
+            is_empty: true,
+            // this feels sketchy but I can't think of a way it can be abused currently.
+            // need to provide _some_ publickey. could make it the program's key. Or a burn key.
+            explorer_escrow_account: ctx.accounts.mint_auth_pda.key(),
+            provided_gear_mint_id: 0,
+            provided_potion_mint_id: 0,
+            explorer_escrow_bump: 0,
+            has_hunted: false,
+            provided_potion: false,
+            provided_gear_burned: false,
+            provided_gear_kept: false,
+            won_combat_gear: false,
+            combat_reward_mint_id: 0,
+            found_treasure: false,
+            used_potion: false,
+            treasure_mint_id: 0,
+            // grail_reward_in_ust: 0,
+    
+        };
 
         // todo confirm we're closing all necessary accounts single escrow account.
         

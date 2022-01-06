@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount, Mint};
 use anchor_spl::associated_token::{AssociatedToken};
-use crate::state::{HuntState};
+use crate::state::{HuntState, EnteredExplorer};
 
 #[derive(Accounts)]
 #[instruction(
@@ -62,6 +62,27 @@ pub fn handler(
     state_account.program_ust_account_bump = program_ust_account_bump;
 
     state_account.owner = ctx.accounts.owner.key();
-    state_account.hunt_state_arr = [None; 5000]; // Vec::with_capacity(94);
+    state_account.hunt_state_arr = [
+            EnteredExplorer {
+                is_empty: true,
+                explorer_escrow_account: ctx.accounts.owner.key(),
+                provided_gear_mint_id: 0,
+                provided_potion_mint_id: 0, // ctx.accounts.provided_potion_mint.key(),
+                explorer_escrow_bump: 0,
+                // // provided_gear_escrow_bump: gear_token_bump,
+                // // provided_potion_escrow_bump: 0, // potion_token_bump,
+                has_hunted: false,
+                provided_potion: false,
+                provided_gear_burned: false,
+                provided_gear_kept: false,
+                won_combat_gear: false,
+                combat_reward_mint_id: 0,
+                // // combat_reward_escrow_bump: None,
+                found_treasure: false,
+                used_potion: false,
+                treasure_mint_id: 0,
+                // grail_reward_in_ust: 0,
+        
+            }; 5000];
     Ok(())
 }
