@@ -117,12 +117,13 @@ pub struct ClaimHunt<'info> {
         }
 
         // let mut provided_gear_triple: Option<&crate::MintInfo> = None;
-        let mut provided_gear_triple: Option<&crate::MintInfo> = Some(&crate::GEAR_MINTS[0]); // TODO TEMP
+        let mut provided_gear_triple: Option<&crate::MintInfo> = Some(&crate::MINTS[0]); // TODO TEMP
 
         // Confirm that the provided_gear_mint is a valid gear mint, and that it matches the gear_mint_id in state
-        // for entry in crate::GEAR_MINTS.iter() {
+        // for entry in crate::MINTS.iter() {
         //     if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() &&
-        //         &entry.id == &entered_explorer_data.provided_gear_mint_id {
+        //         &entry.id == &entered_explorer_data.provided_gear_mint_id &&
+        //         &entry.mintType == "GEAR" {
         //         provided_gear_triple = Some(entry);
         //         break;
         //     }
@@ -132,35 +133,37 @@ pub struct ClaimHunt<'info> {
         //     _ => ()
         // }
 
-        let mut provided_potion_triple: Option<&crate::MintInfo> = None;
+        let mut provided_potion_triple: Option<&crate::MintInfo> = Some(&crate::MINTS[0]); // TODO TEMP
         // Confirm that the provided_potion_mint is a valid potion mint, and that it matches the provided_potion_mint_id in state
         if entered_explorer_data.provided_potion {
-            for entry in crate::POTION_MINTS.iter() {
-                if &entry.mint == &ctx.accounts.provided_potion_mint.key().to_string().as_str() &&
-                    &entry.id == &entered_explorer_data.provided_potion_mint_id {
-                    provided_potion_triple = Some(entry);
-                    break;
-                }
-            }
-            match provided_potion_triple {
-                None => return Err(crate::ErrorCode::BadMintProvided.into()),
-                _ => ()
-            }
+            // for entry in crate::MINTS.iter() {
+            //     if &entry.mint == &ctx.accounts.provided_potion_mint.key().to_string().as_str() &&
+            //         &entry.id == &entered_explorer_data.provided_potion_mint_id &&
+            //         &entry.mintType == "POTION" {
+            //         provided_potion_triple = Some(entry);
+            //         break;
+            //     }
+            // }
+            // match provided_potion_triple {
+            //     None => return Err(crate::ErrorCode::BadMintProvided.into()),
+            //     _ => ()
+            // }
         }
 
 
         // let mut combat_reward_triple: Option<&crate::MintInfo> = None;
-        let mut combat_reward_triple: Option<&crate::MintInfo> = Some(&crate::GEAR_MINTS[0]); // TODO TEMP
+        let mut combat_reward_triple: Option<&crate::MintInfo> = Some(&crate::MINTS[0]); // TODO TEMP
 
         // Confirm that the combat_reward_mint is a valid gear mint, and that it matches the state
         // if entered_explorer_data.won_combat_gear {
-        //     for entry in crate::GEAR_MINTS.iter() {
-        //         if &entry.mint == &ctx.accounts.combat_reward_mint.key().to_string().as_str() &&
-        //             &entry.id == &entered_explorer_data.combat_reward_mint_id {
-        //             combat_reward_triple = Some(entry);
-        //             break;
-        //         }
-        //     }
+            // for entry in crate::MINTS.iter() {
+            //     if &entry.mint == &ctx.accounts.combat_reward_mint.key().to_string().as_str() &&
+            //         &entry.id == &entered_explorer_data.combat_reward_mint_id &&
+            //         &entry.mintType == "GEAR" {
+            //         combat_reward_triple = Some(entry);
+            //         break;
+            //     }
+            // }
         //     match combat_reward_triple {
         //         None => return Err(crate::ErrorCode::BadMintProvided.into()),
         //         _ => ()
@@ -169,19 +172,19 @@ pub struct ClaimHunt<'info> {
         
         let mut treasure_reward_triple: Option<&crate::MintInfo> = None;
         // Confirm that the treasure_mint_id is a valid gear mint, and that it matches the state
-        if entered_explorer_data.found_treasure {
-            for entry in crate::GEAR_MINTS.iter() {
-                if &entry.mint == &ctx.accounts.treasure_mint.key().to_string().as_str() &&
-                    &entry.id == &entered_explorer_data.treasure_mint_id {
-                    treasure_reward_triple = Some(entry);
-                    break;
-                }
-            }
-            match treasure_reward_triple {
-                None => return Err(crate::ErrorCode::BadMintProvided.into()),
-                _ => ()
-            }
-        }
+        // if entered_explorer_data.found_treasure {
+        //     for entry in crate::MINTS.iter() {
+        //         if &entry.mint == &ctx.accounts.treasure_mint.key().to_string().as_str() &&
+        //             &entry.id == &entered_explorer_data.treasure_mint_id {
+        //             treasure_reward_triple = Some(entry);
+        //             break;
+        //         }
+        //     }
+        //     match treasure_reward_triple {
+        //         None => return Err(crate::ErrorCode::BadMintProvided.into()),
+        //         _ => ()
+        //     }
+        // }
         
         // Transfer the user's explorer token back to their assoc. account.
         anchor_spl::token::transfer(
@@ -358,7 +361,7 @@ pub struct ClaimHunt<'info> {
             is_empty: true,
             // this feels sketchy but I can't think of a way it can be abused currently.
             // need to provide _some_ publickey. could make it the program's key. Or a burn key.
-            explorer_escrow_account: ctx.accounts.mint_auth_pda.key(),
+            explorer_escrow_account: *ctx.program_id,
             provided_gear_mint_id: 0,
             provided_potion_mint_id: 0,
             explorer_escrow_bump: 0,

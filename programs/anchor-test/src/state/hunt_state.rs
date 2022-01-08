@@ -35,12 +35,11 @@ pub struct EnteredExplorer {
     pub used_potion: bool,
 
     pub combat_reward_mint_id: u8,
-
     pub treasure_mint_id: u8, // TODO special logic baked in for grail
 
     // // is it possible to refactor such that grail_reward is not required for every entry?
     // // 8 bytes is a lot per entry, but also this tells us exactly how much the user has won
     // // no matter when they claim their UST.
-    // pub grail_reward_in_ust: u16,
+    // pub grail_reward_in_ust: u64,
     // hunt_id: u32, probably unnecessary considering it adds 4 bytes to every row.
 }
