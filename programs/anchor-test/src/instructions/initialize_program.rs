@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::program_pack::IsInitialized;
 use anchor_spl::token::{Token, TokenAccount, Mint};
 use anchor_spl::associated_token::{AssociatedToken};
-use crate::state::{HuntState, EnteredExplorer};
+use crate::state::{HuntState, EnteredExplorer, VrfState, PerCombatRandomization};
 
 #[derive(Accounts)]
 #[instruction(
@@ -16,6 +17,10 @@ pub struct InitializeProgram<'info> {
         zero
     )]
     pub state_account: AccountLoader<'info, HuntState>,
+    #[account(
+        zero
+    )]
+    pub vrf_account: AccountLoader<'info, VrfState>,
 
     #[account(
         init_if_needed, 
@@ -52,8 +57,13 @@ pub fn handler(
 ) -> ProgramResult {
     msg!("{}", ctx.accounts.state_account.to_account_info().data_len());
     let state_account = &mut ctx.accounts.state_account.load_init()?;
+    let vrf_account = &mut ctx.accounts.vrf_account.load_init()?;
+
     msg!("test");
     if state_account.is_initialized {
+        return Err(crate::ErrorCode::AlreadyInitialized.into());
+    }
+    if vrf_account.is_initialized {
         return Err(crate::ErrorCode::AlreadyInitialized.into());
     }
     msg!("test2");
@@ -73,8 +83,8 @@ pub fn handler(
                 // // provided_potion_escrow_bump: 0, // potion_token_bump,
                 has_hunted: false,
                 provided_potion: false,
-                provided_gear_burned: false,
                 provided_gear_kept: false,
+                won_combat: false,
                 won_combat_gear: false,
                 combat_reward_mint_id: 0,
                 // // combat_reward_escrow_bump: None,
@@ -84,5 +94,10 @@ pub fn handler(
                 // grail_reward_in_ust: 0,
         
             }; 5000];
+
+    vrf_account.is_initialized = true;
+    vrf_account.is_usable = false;
+    vrf_account.vrf_arr = [ PerCombatRandomization {winner_seed: 0, winner_gets_combat_reward_seed: 0, treasure_found_seed: 0} ; 2500];
+
     Ok(())
 }

@@ -123,7 +123,7 @@ pub struct ClaimHunt<'info> {
         // for entry in crate::MINTS.iter() {
         //     if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() &&
         //         &entry.id == &entered_explorer_data.provided_gear_mint_id &&
-        //         &entry.mintType == "GEAR" {
+        //         &entry.mint_type == "GEAR" {
         //         provided_gear_triple = Some(entry);
         //         break;
         //     }
@@ -139,7 +139,7 @@ pub struct ClaimHunt<'info> {
             // for entry in crate::MINTS.iter() {
             //     if &entry.mint == &ctx.accounts.provided_potion_mint.key().to_string().as_str() &&
             //         &entry.id == &entered_explorer_data.provided_potion_mint_id &&
-            //         &entry.mintType == "POTION" {
+            //         &entry.mint_type == "POTION" {
             //         provided_potion_triple = Some(entry);
             //         break;
             //     }
@@ -159,7 +159,7 @@ pub struct ClaimHunt<'info> {
             // for entry in crate::MINTS.iter() {
             //     if &entry.mint == &ctx.accounts.combat_reward_mint.key().to_string().as_str() &&
             //         &entry.id == &entered_explorer_data.combat_reward_mint_id &&
-            //         &entry.mintType == "GEAR" {
+            //         &entry.mint_type == "GEAR" {
             //         combat_reward_triple = Some(entry);
             //         break;
             //     }
@@ -262,13 +262,8 @@ pub struct ClaimHunt<'info> {
                 )?;
             }
         }
-        if entered_explorer_data.provided_gear_burned {
-            // Burn provided gear.
 
-            // TODO if provided_gear is a common, add to state for redistribution.
-            // Otherwise, destroy and reclaim rent.
-
-        } else if entered_explorer_data.provided_gear_kept {
+        if entered_explorer_data.provided_gear_kept {
             // Transfer the user's original gear back to their associated account
             anchor_spl::token::mint_to(
                 CpiContext::new_with_signer(
@@ -367,8 +362,8 @@ pub struct ClaimHunt<'info> {
             explorer_escrow_bump: 0,
             has_hunted: false,
             provided_potion: false,
-            provided_gear_burned: false,
             provided_gear_kept: false,
+            won_combat: false,
             won_combat_gear: false,
             combat_reward_mint_id: 0,
             found_treasure: false,

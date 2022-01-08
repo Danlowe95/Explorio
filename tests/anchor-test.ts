@@ -110,7 +110,7 @@ const createFakeUsers = async (
   return arr;
 };
 
-const USER_GROUP_SIZE = 500;
+const USER_GROUP_SIZE = 20;
 describe("anchor-test", () => {
   // Configure the client to use the local cluster.\
   const provider = anchor.Provider.env();
@@ -126,6 +126,7 @@ describe("anchor-test", () => {
   let mintAuth: anchor.web3.PublicKey;
   let mintAuthBump: number;
   let stateAccount: anchor.web3.PublicKey;
+  let vrfAccount: anchor.web3.PublicKey;
   let fakeUser1: FakeUser;
   let userGroup: FakeUser[] = [];
   let programUstAccount: anchor.web3.PublicKey;
@@ -217,12 +218,15 @@ describe("anchor-test", () => {
   });
   it("Is initializes!", async () => {
     const stateAccountKeypair = anchor.web3.Keypair.generate();
+    const vrfAccountKeypair = anchor.web3.Keypair.generate();
     stateAccount = stateAccountKeypair.publicKey;
+    vrfAccount = vrfAccountKeypair.publicKey;
 
     await program.rpc.initializeProgram(programUstAccountBump, mintAuthBump, {
       accounts: {
         owner: provider.wallet.publicKey,
         stateAccount: stateAccountKeypair.publicKey,
+        vrfAccount: vrfAccountKeypair.publicKey,
         programUstAccount: programUstAccount,
         ustMint: ustMint.publicKey,
         tokenProgram: spl.TOKEN_PROGRAM_ID,
@@ -230,11 +234,15 @@ describe("anchor-test", () => {
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       },
-      signers: [stateAccountKeypair],
+      signers: [stateAccountKeypair, vrfAccountKeypair],
       instructions: [
         await program.account.huntState.createInstruction(
           stateAccountKeypair,
           225043
+        ),
+        await program.account.vrfState.createInstruction(
+          vrfAccountKeypair,
+          20010
         ),
       ],
     });
@@ -356,8 +364,30 @@ describe("anchor-test", () => {
     assert(user1ExplorerAccount.amount.toNumber() === 0);
     assert(user1GearAccount.amount.toNumber() === 0);
   });
+  it("Does not allow processing until after a vrf call", async () => {
+    // This should fail
+    try {
+      await doProcessHunt({
+        program,
+        stateAccount,
+        programUstAccount,
+        vrfAccount,
+      });
+      assert.ok(false);
+    } catch (err) {
+      console.log(err.toString());
+      const errMsg = "Randomness has not been generated ahead of processing.";
+      assert.equal(errMsg, err.toString());
+    }
+  });
+
   it("ProcessHunt: Single Explorer - modifies state account values properly", async () => {
-    await doProcessHunt({ program, stateAccount, programUstAccount });
+    await doFetchVrfAndProcessHunt({
+      program,
+      stateAccount,
+      programUstAccount,
+      vrfAccount,
+    });
 
     let huntState = await program.account.huntState.fetch(stateAccount);
     const huntStateArr: Array<any> = huntState.huntStateArr as Array<any>;
@@ -368,9 +398,35 @@ describe("anchor-test", () => {
     assert(huntStateArr.filter((x) => x.isEmpty && x.hasHunted).length === 0);
     const enteredExplorers = huntStateArr.filter((x) => x.isEmpty === false);
     assert(enteredExplorers.length === 1);
-    console.log(enteredExplorers);
+    // console.log(enteredExplorers);
     // Confirm all entered explorers have had their hasHunted bools flipped after processing.
     assert(enteredExplorers.filter((x) => x.hasHunted === true).length === 1);
+  });
+  it("Does not allow more than one vrf call before processing", async () => {
+    let vrfState = await program.account.vrfState.fetch(vrfAccount);
+    assert(vrfState.isUsable === false);
+    await doFetchVrf({
+      program,
+      stateAccount,
+      programUstAccount,
+      vrfAccount,
+    });
+    vrfState = await program.account.vrfState.fetch(vrfAccount);
+    assert(vrfState.isUsable);
+    // This should fail
+    try {
+      await doFetchVrf({
+        program,
+        stateAccount,
+        programUstAccount,
+        vrfAccount,
+      });
+      assert.ok(false);
+    } catch (err) {
+      console.log(err.toString());
+      const errMsg = "Randomness has already been generated.";
+      assert.equal(errMsg, err.toString());
+    }
   });
   it("ClaimHunt: Single Explorer - Allows retrieval of expected tokens", async () => {
     // Fetch required data from state account first.
@@ -383,7 +439,7 @@ describe("anchor-test", () => {
     // Confirm the explorer+gear accounts still have 0.
     assert(user1ExplorerAccount.amount.toNumber() === 0);
     assert(user1GearAccount.amount.toNumber() === 0);
-    await doClaimHunt(fakeUser1, {
+    await doChecksAndClaimHunt(fakeUser1, {
       program,
       mintAuth,
       explorerMint,
@@ -391,24 +447,6 @@ describe("anchor-test", () => {
       gearMint,
       potionMint,
     });
-    const huntState = await program.account.huntState.fetch(stateAccount);
-    const huntStateArr = huntState.huntStateArr as Array<any>;
-    // Confirm the user's explorer is no longer in the state.
-    assert(
-      !huntStateArr.find((x) =>
-        x.explorerEscrowAccount.equals(fakeUser1.explorerEscrowAccount)
-      )
-    );
-    // Confirm there are no non-empty slots in the array now.
-    assert(huntStateArr.every((x) => x.isEmpty));
-    user1ExplorerAccount = await explorerMint.getAccountInfo(
-      fakeUser1.explorerAccount
-    );
-    user1GearAccount = await gearMint.getAccountInfo(fakeUser1.gearAccount);
-
-    // Confirm the explorer+gear tokens were taken from the user.
-    assert(user1ExplorerAccount.amount.toNumber() === 1);
-    assert(user1GearAccount.amount.toNumber() === 1);
   });
   it("100 user test!", async () => {
     // await doInitialize();
@@ -437,7 +475,13 @@ describe("anchor-test", () => {
     assert(huntStateArr.filter((x) => x.isEmpty && x.hasHunted).length === 0);
     let enteredExplorers = huntStateArr.filter((x) => !x.isEmpty);
 
-    await doProcessHunt({ program, stateAccount, programUstAccount });
+    // Don't fetch because already fetchedVrf in earlier test in preparation.
+    await doProcessHunt({
+      program,
+      stateAccount,
+      vrfAccount,
+      programUstAccount,
+    });
     huntState = await program.account.huntState.fetch(stateAccount);
     huntStateArr = huntState.huntStateArr as Array<any>;
     enteredExplorers = huntStateArr.filter((x) => !x.isEmpty);
@@ -466,10 +510,52 @@ describe("anchor-test", () => {
   });
 });
 
-const doProcessHunt = async ({ program, stateAccount, programUstAccount }) => {
+const doFetchVrfAndProcessHunt = async ({
+  program,
+  stateAccount,
+  vrfAccount,
+  programUstAccount,
+}) => {
+  await doFetchVrf({
+    program,
+    stateAccount: stateAccount,
+    vrfAccount: vrfAccount,
+    programUstAccount: programUstAccount,
+  });
+  await doProcessHunt({
+    program,
+    stateAccount: stateAccount,
+    vrfAccount: vrfAccount,
+    programUstAccount: programUstAccount,
+  });
+};
+const doFetchVrf = async ({
+  program,
+  stateAccount,
+  vrfAccount,
+  programUstAccount,
+}) => {
+  await program.rpc.fetchVrf({
+    accounts: {
+      stateAccount: stateAccount,
+      vrfAccount: vrfAccount,
+      programUstAccount: programUstAccount,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+    },
+  });
+};
+
+const doProcessHunt = async ({
+  program,
+  stateAccount,
+  vrfAccount,
+  programUstAccount,
+}) => {
   await program.rpc.processHunt({
     accounts: {
       stateAccount: stateAccount,
+      vrfAccount: vrfAccount,
       programUstAccount: programUstAccount,
       systemProgram: anchor.web3.SystemProgram.programId,
       clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
@@ -523,7 +609,7 @@ const doChecksAndClaimHunt = async (
     combatRewardMintId,
     treasureMintId,
     providedGearKept,
-    providedGearBurned,
+    wonCombat,
     wonCombatGear,
     foundTreasure,
     providedPotion,
@@ -549,9 +635,7 @@ const doChecksAndClaimHunt = async (
     potion1ExpectedGains++;
   }
   console.log(
-    `Found treasure: ${
-      foundTreasure ? "Yes" : "No"
-    } TreasureType: ${treasureMintId} Won combat ${wonCombatGear} combatRewardType: ${combatRewardMintId} Expected Gear total: ${gear1ExpectedGains} Expected potion total: ${potion1ExpectedGains}`
+    `Found treasure: ${foundTreasure} TreasureType: ${treasureMintId} Won combat ${wonCombat} Won gear: ${wonCombatGear} combatRewardType: ${combatRewardMintId} Expected Gear total: ${gear1ExpectedGains} Expected potion total: ${potion1ExpectedGains}`
   );
   await doClaimHunt(fakeUser, {
     program,
@@ -571,6 +655,14 @@ const doChecksAndClaimHunt = async (
 
   // Confirm the explorer+gear+potion tokens were given to the user.
   assert(user1ExplorerAccount.amount.toNumber() === 1);
+  console.log(
+    `amount: ${user1GearAccount.amount.toNumber()} expected: ${gear1ExpectedGains}`
+  );
+  if (user1GearAccount.amount.toNumber() !== gear1ExpectedGains) {
+    console.log(
+      `Found treasure: ${foundTreasure} TreasureType: ${treasureMintId} Won combat ${wonCombat} Won gear: ${wonCombatGear} combatRewardType: ${combatRewardMintId} Expected Gear total: ${gear1ExpectedGains} Expected potion total: ${potion1ExpectedGains}`
+    );
+  }
   assert(user1GearAccount.amount.toNumber() === gear1ExpectedGains);
   assert(user1PotionAccount.amount.toNumber() === potion1ExpectedGains);
 

@@ -1,6 +1,15 @@
 use anchor_lang::prelude::*;
 
 
+// 15,009
+#[account(zero_copy)]
+pub struct VrfState {
+    pub is_initialized: bool,
+    pub is_usable: bool,
+    pub vrf_arr: [PerCombatRandomization; 2500], 
+
+}
+
 #[account(zero_copy)]
 pub struct HuntState {
     pub owner: Pubkey,
@@ -12,7 +21,14 @@ pub struct HuntState {
 }
 #[test]
 fn hmm() {
-  eprintln!("{}", std::mem::size_of::<HuntState>());
+  eprintln!("{}", std::mem::size_of::<VrfState>());
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default, Copy)]
+pub struct PerCombatRandomization {
+  pub winner_seed: u8,
+  pub winner_gets_combat_reward_seed: u8,
+  pub treasure_found_seed: u32,
 }
 
 // #[account]
@@ -28,8 +44,8 @@ pub struct EnteredExplorer {
     pub explorer_escrow_bump: u8,
     pub provided_potion: bool,
     pub has_hunted: bool,
-    pub provided_gear_burned: bool,
     pub provided_gear_kept: bool,
+    pub won_combat: bool,
     pub won_combat_gear: bool,
     pub found_treasure: bool,
     pub used_potion: bool,

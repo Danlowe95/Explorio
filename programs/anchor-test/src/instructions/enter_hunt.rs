@@ -88,7 +88,7 @@ pub struct EnterHunt<'info> {
 
         let mut gear_triple: Option<&crate::MintInfo> = Some(&crate::MINTS[0]); // TODO TEMP
         // for entry in crate::MINTS.iter() {
-        //     if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() && &entry.mintType == "GEAR" {
+        //     if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() && &entry.mint_type == "GEAR" {
         //         gear_triple = Some(entry);
         //         break;
         //     }
@@ -101,7 +101,7 @@ pub struct EnterHunt<'info> {
 
         let mut potion_triple: Option<&crate::MintInfo> = Some(&crate::MINTS[1]); // TODO TEMP
         // for entry in crate::MINTS.iter() {
-        //     if &entry.mint == &ctx.accounts.provided_potion_mint.key().to_string().as_str()  && &entry.mintType == "POTION" {
+        //     if &entry.mint == &ctx.accounts.provided_potion_mint.key().to_string().as_str()  && &entry.mint_type == "POTION" {
         //         potion_triple = Some(entry);
         //         break;
         //     }
@@ -213,8 +213,8 @@ pub struct EnterHunt<'info> {
             explorer_escrow_bump: explorer_token_bump,
             has_hunted: false,
             provided_potion: provided_potion,
-            provided_gear_burned: false,
             provided_gear_kept: false,
+            won_combat: false,
             won_combat_gear: false,
             combat_reward_mint_id: 0,
           

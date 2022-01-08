@@ -1,9 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{TokenAccount};
-use crate::state::{HuntState, EnteredExplorer};
-use anchor_lang::solana_program::hash::*;
+use crate::state::{HuntState, EnteredExplorer, VrfState};
 
-fn get_treasure_mint_id_from_val(val: u64) -> Result<u8, ProgramError> {
+fn get_treasure_mint_id_from_val(val: u32) -> Result<u8, ProgramError> {
     return match val {
         0..=3_749_999 => Ok(0),
         3_750_000..=3_999_999 => Ok(2), // potion
@@ -22,6 +21,8 @@ pub struct ProcessHunt<'info> {
     
     #[account(mut)]
     pub state_account: AccountLoader<'info, HuntState>,
+    #[account(mut)]
+    pub vrf_account: AccountLoader<'info, VrfState>,
     // for reading total ust if grail is found
     // TODO will need to store in state UST value outstanding while waiting for user to claim
     pub program_ust_account: Account<'info, TokenAccount>,
@@ -47,6 +48,11 @@ pub struct ProcessHunt<'info> {
 pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
     // Walk the state vec and do some basic stub processing
     let mut state_account = ctx.accounts.state_account.load_mut()?;
+    let mut vrf_account = ctx.accounts.vrf_account.load_mut()?;
+    if !vrf_account.is_usable {
+        return Err(crate::ErrorCode::RandomnessNotGenerated.into());
+    }
+    vrf_account.is_usable = false;
     let num_entered: usize = state_account.hunt_state_arr.iter().filter(|&n| !n.is_empty && !n.has_hunted).count();
 
     
@@ -56,13 +62,14 @@ pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
 
     // After shuffle, pull all_entered iter
     let mut all_entered = state_account.hunt_state_arr.iter_mut().filter(|x| !x.is_empty);
+    let mut vrf_entries = vrf_account.vrf_arr.iter_mut();
     // let clock = &ctx.accounts.clock;
     // let clock_bytes: [u8; 8] = clock.slot.to_be_bytes();
 
     // A hash derived from adding together unix_timestamp and clock slot
-    // let basic_hash: Hash = hash(&(clock.unix_timestamp as i128 + clock.slot as i128).to_be_bytes());
+    // let pseudo_random_u64: u64 = u64::try_from_slice(&hash(&(ctx.accounts.clock.unix_timestamp as i128 + ctx.accounts.clock.slot as i128).to_be_bytes()).to_bytes()[0..8]).unwrap();
     // Then, a u64 derived from the first 8 bytes of the hash.
-    // let pseudo_random_u64: u64 = u64::try_from_slice(&basic_hash.to_bytes()[0..8]).unwrap(); //  u64::from_str_radix(&basic_hash.to_string(), 16).unwrap();
+    // let pseudo_random_u64: u64 = u64::try_from_slice(&basic_hash).unwrap(); //  u64::from_str_radix(&basic_hash.to_string(), 16).unwrap();
 
     // msg!("the hash: {}", basic_hash);
     // msg!("the hash compute: {}", pseudo_random_u64);
@@ -73,30 +80,28 @@ pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
             return Err(crate::ErrorCode::IncorrectIndexFed.into());
         }
         let combatant_entry = all_entered.next();
+        let this_entry_rand = vrf_entries.next().unwrap();
+
         if combatant_entry.is_none() {
             // No combatant: just go to treasure
             entry.has_hunted = true;
             entry.provided_gear_kept = true;
-            // eventually
-            entry.found_treasure = false;
+            let treasure_mint_id: u8 = get_treasure_mint_id_from_val(this_entry_rand.treasure_found_seed)?;
+            if treasure_mint_id != 0 {
+                entry.found_treasure = true;
+                entry.treasure_mint_id = treasure_mint_id;
+            }
         } else {
             let combatant= combatant_entry.unwrap();
             if combatant.is_empty {
                 return Err(crate::ErrorCode::IncorrectIndexFed.into());
             }
-            // Fake randomness by adding together the random number with bytes from each escrow account.
-            // let strangely_computed_value: u128 = u128::from(pseudo_random_u64)
-            //     .checked_add(
-            //         u128::from(u64::try_from_slice(&entry.explorer_escrow_account.key().to_bytes()[0..8]).unwrap())
-            //     ).unwrap()
-            //     .checked_add( u128::from(u64::try_from_slice(&combatant.explorer_escrow_account.key().to_bytes()[0..8]).unwrap()))
-            //     .unwrap();
-            let strangely_computed_value: u64 = 100_000_000;
-            let combat_winner: bool = strangely_computed_value % 2 == 0;
-            let treasure_mint_id: u8 = get_treasure_mint_id_from_val(strangely_computed_value % 5_000_000)?;
-            // idk if this is mathematically any different than just doing % 2
-            let combat_gear_burned = strangely_computed_value % 100 % 2 == 0;
-            
+
+            let combat_winner: bool = this_entry_rand.winner_seed < 50; // todo fetch actual odds out of 100
+            let treasure_mint_id: u8 = get_treasure_mint_id_from_val(this_entry_rand.treasure_found_seed)?;
+            let loser_gear_burned = this_entry_rand.winner_gets_combat_reward_seed == 1; // 50/50
+
+            msg!("tr {}", this_entry_rand.treasure_found_seed);
             let winner: &mut EnteredExplorer;
             let loser: &mut EnteredExplorer;
             if combat_winner {
@@ -107,9 +112,10 @@ pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
                 loser = entry;
             }
             winner.has_hunted = true;
+            winner.won_combat = true;
             winner.provided_gear_kept = true;
-            winner.won_combat_gear = !combat_gear_burned;
-            if !combat_gear_burned {
+            winner.won_combat_gear = !loser_gear_burned;
+            if !loser_gear_burned {
                 winner.combat_reward_mint_id = loser.provided_gear_mint_id;
             }
             
@@ -118,10 +124,7 @@ pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
                 winner.treasure_mint_id = treasure_mint_id;
             }
             loser.has_hunted = true;
-            loser.provided_gear_kept = false;
 
-            // Combat done - treasure next, for winner
-            winner.found_treasure = false;
         }
     }
 
