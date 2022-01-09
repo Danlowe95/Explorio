@@ -132,6 +132,9 @@ describe("anchor-test", () => {
   let programUstAccount: anchor.web3.PublicKey;
   let programUstAccountBump: number;
 
+  // Experimental
+  let mintMap: { [mintId: number]: spl.Token } = {};
+
   before(async () => {
     wallet = program.provider.wallet as NodeWallet;
 
@@ -181,6 +184,9 @@ describe("anchor-test", () => {
       0,
       spl.TOKEN_PROGRAM_ID
     );
+
+    mintMap[1] = gearMint;
+    mintMap[2] = potionMint;
 
     // Create single user for first set of tests
     fakeUser1 = await createFakeUser(
@@ -247,10 +253,6 @@ describe("anchor-test", () => {
       ],
     });
 
-    console.log("potion " + potionMint.publicKey);
-    console.log("gear " + gearMint.publicKey);
-    console.log("explorer " + explorerMint.publicKey);
-
     // Fetch state after initialization.
     let huntState = await program.account.huntState.fetch(stateAccount);
     assert(huntState.isInitialized === true);
@@ -261,7 +263,6 @@ describe("anchor-test", () => {
   });
   it("EnterHunt: Single Explorer - takes proper tokens and succeeds", async () => {
     // Setup to enter fakeUser1 into hunt.
-    // console.log(JSON.stringify(fakeUser1));
     let user1ExplorerAccount = await explorerMint.getAccountInfo(
       fakeUser1.explorerAccount
     );
@@ -269,9 +270,6 @@ describe("anchor-test", () => {
     let user1PotionAccount = await potionMint.getAccountInfo(
       fakeUser1.potionAccount
     );
-    console.log("potion1 " + user1PotionAccount.address);
-    console.log("gear1 " + user1GearAccount.address);
-    console.log("explorer1 " + user1ExplorerAccount.address);
     // basic checks: confirm the accounts are populated as expected.
     assert(user1ExplorerAccount.amount.toNumber() === 1);
     assert(user1GearAccount.amount.toNumber() === 1);
@@ -313,7 +311,6 @@ describe("anchor-test", () => {
     assert(huntStateArr.filter((x) => x.isEmpty).length === 4999);
     assert(huntStateArr.filter((x) => !x.isEmpty).length === 1);
     const enteredExplorer = huntStateArr.find((x) => x.isEmpty === false);
-    console.log(enteredExplorer);
     assert(
       enteredExplorer.explorerEscrowAccount.equals(
         fakeUser1.explorerEscrowAccount
@@ -336,11 +333,11 @@ describe("anchor-test", () => {
         explorerMint,
         stateAccount,
         gearMint,
+        mintMap,
         potionMint,
       });
       assert.ok(false);
     } catch (err) {
-      console.log(err.toString());
       const errMsg =
         "Claim is not possible yet as the Explorer has not hunted.";
       assert.equal(errMsg, err.toString());
@@ -375,7 +372,6 @@ describe("anchor-test", () => {
       });
       assert.ok(false);
     } catch (err) {
-      console.log(err.toString());
       const errMsg = "Randomness has not been generated ahead of processing.";
       assert.equal(errMsg, err.toString());
     }
@@ -398,7 +394,6 @@ describe("anchor-test", () => {
     assert(huntStateArr.filter((x) => x.isEmpty && x.hasHunted).length === 0);
     const enteredExplorers = huntStateArr.filter((x) => x.isEmpty === false);
     assert(enteredExplorers.length === 1);
-    // console.log(enteredExplorers);
     // Confirm all entered explorers have had their hasHunted bools flipped after processing.
     assert(enteredExplorers.filter((x) => x.hasHunted === true).length === 1);
   });
@@ -423,7 +418,6 @@ describe("anchor-test", () => {
       });
       assert.ok(false);
     } catch (err) {
-      console.log(err.toString());
       const errMsg = "Randomness has already been generated.";
       assert.equal(errMsg, err.toString());
     }
@@ -445,13 +439,13 @@ describe("anchor-test", () => {
       explorerMint,
       stateAccount,
       gearMint,
+      mintMap,
       potionMint,
     });
   });
   it("100 user test!", async () => {
     // await doInitialize();
 
-    // console.log(userGroup[0]);
     await Promise.all(
       userGroup.map(
         async (user) =>
@@ -496,6 +490,7 @@ describe("anchor-test", () => {
             program,
             explorerMint,
             gearMint,
+            mintMap,
             potionMint,
             mintAuth,
             stateAccount,
@@ -596,7 +591,15 @@ const doEnterHunt = async (
 
 const doChecksAndClaimHunt = async (
   fakeUser: FakeUser,
-  { program, mintAuth, explorerMint, gearMint, potionMint, stateAccount }
+  {
+    program,
+    mintAuth,
+    explorerMint,
+    gearMint,
+    mintMap,
+    potionMint,
+    stateAccount,
+  }
 ) => {
   let huntState = await program.account.huntState.fetch(stateAccount);
   let huntStateArr: Array<any> = huntState.huntStateArr as Array<any>;
@@ -641,6 +644,7 @@ const doChecksAndClaimHunt = async (
     program,
     explorerMint,
     gearMint,
+    mintMap,
     potionMint,
     mintAuth,
     stateAccount,
@@ -655,9 +659,7 @@ const doChecksAndClaimHunt = async (
 
   // Confirm the explorer+gear+potion tokens were given to the user.
   assert(user1ExplorerAccount.amount.toNumber() === 1);
-  console.log(
-    `amount: ${user1GearAccount.amount.toNumber()} expected: ${gear1ExpectedGains}`
-  );
+
   if (user1GearAccount.amount.toNumber() !== gear1ExpectedGains) {
     console.log(
       `Found treasure: ${foundTreasure} TreasureType: ${treasureMintId} Won combat ${wonCombat} Won gear: ${wonCombatGear} combatRewardType: ${combatRewardMintId} Expected Gear total: ${gear1ExpectedGains} Expected potion total: ${potion1ExpectedGains}`
@@ -677,13 +679,33 @@ const doChecksAndClaimHunt = async (
 };
 const doClaimHunt = async (
   fakeUser: FakeUser,
-  { program, mintAuth, explorerMint, gearMint, potionMint, stateAccount }
+  {
+    program,
+    mintAuth,
+    mintMap,
+    explorerMint,
+    gearMint,
+    potionMint,
+    stateAccount,
+  }
 ) => {
   const huntState = await program.account.huntState.fetch(stateAccount);
   const huntStateArr: Array<any> = huntState.huntStateArr as Array<any>;
   const enteredExplorer = huntStateArr.find((x) =>
     x.explorerEscrowAccount.equals(fakeUser.explorerEscrowAccount)
   );
+  const {
+    providedGearMintId,
+    providedPotionMintId,
+    combatRewardMintId,
+    treasureMintId,
+    providedGearKept,
+    wonCombat,
+    wonCombatGear,
+    foundTreasure,
+    providedPotion,
+    potionUsed,
+  } = enteredExplorer;
   await program.rpc.claimHunt(enteredExplorer.explorerEscrowBump, {
     accounts: {
       user: fakeUser.user.publicKey,
@@ -691,14 +713,27 @@ const doClaimHunt = async (
       userAssociatedProvidedGearAccount: fakeUser.gearAccount,
       userAssociatedPotionAccount: fakeUser.potionAccount,
       userAssociatedCombatRewardAccount: fakeUser.gearAccount,
-      userAssociatedTreasureAccount: fakeUser.gearAccount,
+      // todo, defaulting to gear when mint is 0. we need to figure out the best 'default/unset' account to pass.
+      // Example: Calling claimhunt when hunt has not processed means it is impossible to pass a assTreasureAccount that matches treasureMint
+      // because treasureMintID in state is going to be 0. That's fine actually. let the error happen and catch above.
+      userAssociatedTreasureAccount:
+        treasureMintId === 0 || treasureMintId === 1
+          ? fakeUser.gearAccount
+          : fakeUser.potionAccount,
       explorerEscrowAccount: enteredExplorer.explorerEscrowAccount,
       mintAuthPda: mintAuth,
       explorerMint: explorerMint.publicKey,
-      providedGearMint: gearMint.publicKey, // todo enteredExplorer.providedGearMintId,
-      providedPotionMint: potionMint.publicKey, // todo enteredExplorer.providedPotionMintId,
-      combatRewardMint: gearMint.publicKey, // todo enteredExplorer.combatRewardMintId,
-      treasureMint: gearMint.publicKey, //todo enteredExplorer.treasureMintId
+      providedGearMint: mintMap[providedGearMintId].publicKey,
+      providedPotionMint: mintMap?.[providedPotionMintId]
+        ? mintMap[providedPotionMintId].publicKey
+        : mintMap[2].publicKey,
+      combatRewardMint: mintMap?.[combatRewardMintId]
+        ? mintMap[combatRewardMintId].publicKey
+        : mintMap[1].publicKey,
+      // defaulting to gear1 if no mint id set. could default to a bogus mint instead and let it fail with "a token mint constraint was violated."
+      treasureMint: mintMap?.[treasureMintId]
+        ? mintMap[treasureMintId].publicKey
+        : mintMap[1].publicKey,
       stateAccount: stateAccount,
       tokenProgram: spl.TOKEN_PROGRAM_ID,
       systemProgram: anchor.web3.SystemProgram.programId,
