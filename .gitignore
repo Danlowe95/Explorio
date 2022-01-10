@@ -1,5 +1,6 @@
 explorio.code-workspace
 test-ledger/
+local/initialized_data.json
 .anchor
 .DS_Store
 target
