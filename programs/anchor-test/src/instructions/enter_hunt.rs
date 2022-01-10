@@ -86,7 +86,7 @@ pub struct EnterHunt<'info> {
         // Verify provided gear/potion accounts are valid mints for their roles
         msg!("{}", state_account.mint_auth_account_bump);
 
-        let mut gear_triple: Option<&crate::MintInfo> = Some(&crate::MINTS[0]); // TODO TEMP
+        let mut gear_triple: Option<&crate::MintInfo> = crate::MINTS.iter().find(|x| x.id == crate::SHORTSWORD_ID); // TODO TEMP
         // for entry in crate::MINTS.iter() {
         //     if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() && &entry.mint_type == "GEAR" {
         //         gear_triple = Some(entry);
@@ -99,7 +99,7 @@ pub struct EnterHunt<'info> {
             _ => ()
         }
 
-        let mut potion_triple: Option<&crate::MintInfo> = Some(&crate::MINTS[1]); // TODO TEMP
+        let mut potion_triple: Option<&crate::MintInfo> = crate::MINTS.iter().find(|x| x.id == crate::POT_OF_STRENGTH_ID); // TODO TEMP
         // for entry in crate::MINTS.iter() {
         //     if &entry.mint == &ctx.accounts.provided_potion_mint.key().to_string().as_str()  && &entry.mint_type == "POTION" {
         //         potion_triple = Some(entry);

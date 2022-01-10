@@ -5,6 +5,8 @@ import * as spl from "@solana/spl-token";
 import * as sol from "@solana/web3.js";
 import assert = require("assert");
 import { AnchorTest } from "../target/types/anchor_test";
+import env from "../local/env.json";
+const fs = require("fs");
 
 interface FakeUser {
   user: anchor.web3.Keypair;
@@ -16,28 +18,54 @@ interface FakeUser {
   potionAccount: anchor.web3.PublicKey;
 }
 
-// const GEAR_MINT = new anchor.BN("2sHzUbXC5V6r4sn1RYFsK2Ui1rEckUFHBWLKt6SA3tqr");
-// const POTION_MINT = new anchor.BN(
-//   "2sHzUbXC5V6r4sn1RYFsK2Ui1rEckUFHBWLKt6SA3tqr"
-// );
-// const UST_MINT = new anchor.BN("CymnnQf3L2hCxWVWEETSTQEhPMZbiBNiB7oyoePM2Djm");
+const SHORTSWORD_MINT_ID = 1;
+const POTION_OF_STRENGTH_MINT_ID = 12;
+const POTION_OF_MENDING_MINT_ID = 13;
+interface MintInfo {
+  id: number;
+  address: string;
+}
+
+// Pull in local mint data (after generate_mints_config)
+const { mints } = env;
+// Pull in any already initialized state data
+const DATA_FILE = "./local/initialized_data.json";
+let initializedData: {
+  stateAccount: anchor.web3.PublicKey | null;
+  vrfAccount: anchor.web3.PublicKey | null;
+};
+// If file is initialized, it's expected to be a valid config.
+if (fs.existsSync(DATA_FILE)) {
+  const res = fs.readFileSync(DATA_FILE);
+  const parsedData = JSON.parse(res);
+  initializedData = {
+    stateAccount: new anchor.web3.PublicKey(parsedData.stateAccount),
+    vrfAccount: new anchor.web3.PublicKey(parsedData.vrfAccount),
+  };
+}
+
+let { stateAccount, vrfAccount } = initializedData || {
+  stateAccount: null,
+  vrfAccount: null,
+};
+const firstRun = stateAccount == null;
 
 const createFakeUser = async (
   program: anchor.Program<AnchorTest>,
-  explorerMint: spl.Token,
-  ustMint: spl.Token,
-  gearMint: spl.Token,
-  potionMint: spl.Token
+  { explorerMint, ustMint, gearMint, potionMint, mintAuth, stateAccount }
 ): Promise<FakeUser> => {
   const fakeUser = anchor.web3.Keypair.generate();
   const fakeUserExplorerAccount =
     await explorerMint.createAssociatedTokenAccount(fakeUser.publicKey);
+
   const fakeUserUstAccount = await ustMint.createAssociatedTokenAccount(
     fakeUser.publicKey
   );
+  //  TypeError: mint.toBuffer is not a function
   const fakeUserGearAccount = await gearMint.createAssociatedTokenAccount(
     fakeUser.publicKey
   );
+
   const fakeUserPotionAccount = await potionMint.createAssociatedTokenAccount(
     fakeUser.publicKey
   );
@@ -53,18 +81,22 @@ const createFakeUser = async (
     [],
     1
   );
-  await gearMint.mintTo(
-    fakeUserGearAccount,
-    program.provider.wallet.publicKey,
-    [],
-    1
-  );
-  await potionMint.mintTo(
-    fakeUserPotionAccount,
-    program.provider.wallet.publicKey,
-    [],
-    1
-  );
+  await program.rpc.airdropStarter({
+    accounts: {
+      user: fakeUser.publicKey,
+      userShortswordAssociatedAccount: fakeUserGearAccount,
+      userStrengthPotionAssociatedAccount: fakeUserPotionAccount,
+      shortswordMint: gearMint.publicKey,
+      strengthPotionMint: potionMint.publicKey,
+      mintAuth: mintAuth,
+      stateAccount: stateAccount,
+      tokenProgram: spl.TOKEN_PROGRAM_ID,
+      associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    },
+    signers: [fakeUser],
+  });
   // fund some sol to fakeUser1 for the enterHunt transaction
   await program.provider.connection.confirmTransaction(
     await program.provider.connection.requestAirdrop(
@@ -96,26 +128,30 @@ const createFakeUser = async (
 const createFakeUsers = async (
   num: number,
   program: anchor.Program<AnchorTest>,
-  explorerMint: spl.Token,
-  ustMint: spl.Token,
-  gearMint: spl.Token,
-  potionMint: spl.Token
+  { explorerMint, ustMint, gearMint, potionMint, mintAuth, stateAccount }
 ) => {
   const arr = [];
   for (let i = 0; i < num; i++) {
     arr.push(
-      await createFakeUser(program, explorerMint, ustMint, gearMint, potionMint)
+      await createFakeUser(program, {
+        explorerMint,
+        ustMint,
+        gearMint,
+        potionMint,
+        mintAuth,
+        stateAccount,
+      })
     );
   }
   return arr;
 };
 
-const USER_GROUP_SIZE = 20;
+const USER_GROUP_SIZE = 15;
 describe("anchor-test", () => {
   // Configure the client to use the local cluster.\
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
-
+  console.log("wallet account pubkey: " + provider.wallet.publicKey.toString());
   const program = anchor.workspace.AnchorTest as anchor.Program<AnchorTest>;
 
   let wallet: NodeWallet;
@@ -125,8 +161,8 @@ describe("anchor-test", () => {
   let potionMint: spl.Token;
   let mintAuth: anchor.web3.PublicKey;
   let mintAuthBump: number;
-  let stateAccount: anchor.web3.PublicKey;
-  let vrfAccount: anchor.web3.PublicKey;
+  // TODO don't require copy/paste of this
+
   let fakeUser1: FakeUser;
   let userGroup: FakeUser[] = [];
   let programUstAccount: anchor.web3.PublicKey;
@@ -136,8 +172,8 @@ describe("anchor-test", () => {
   let mintMap: { [mintId: number]: spl.Token } = {};
 
   before(async () => {
+    console.log(program.programId);
     wallet = program.provider.wallet as NodeWallet;
-
     ustMint = await spl.Token.createMint(
       program.provider.connection,
       wallet.payer,
@@ -168,98 +204,116 @@ describe("anchor-test", () => {
       0,
       spl.TOKEN_PROGRAM_ID
     );
-    gearMint = await spl.Token.createMint(
+
+    const shortswordPubkey = new anchor.web3.PublicKey(mints[0].address);
+    const potOfStrengthPubkey = new anchor.web3.PublicKey(mints[11].address);
+
+    gearMint = await new spl.Token(
       program.provider.connection,
-      wallet.payer,
-      wallet.publicKey,
-      wallet.publicKey,
-      0,
-      spl.TOKEN_PROGRAM_ID
+      shortswordPubkey,
+      spl.TOKEN_PROGRAM_ID,
+      wallet.payer
     );
-    potionMint = await spl.Token.createMint(
+
+    potionMint = await new spl.Token(
       program.provider.connection,
-      wallet.payer,
-      wallet.publicKey,
-      wallet.publicKey,
-      0,
-      spl.TOKEN_PROGRAM_ID
+      potOfStrengthPubkey,
+      spl.TOKEN_PROGRAM_ID,
+      wallet.payer
     );
-
-    mintMap[1] = gearMint;
-    mintMap[2] = potionMint;
-
-    // Create single user for first set of tests
-    fakeUser1 = await createFakeUser(
-      program,
-      explorerMint,
-      ustMint,
-      gearMint,
-      potionMint
-    );
-
-    // Create 10 user group for test
-    userGroup = await createFakeUsers(
-      USER_GROUP_SIZE,
-      program,
-      explorerMint,
-      ustMint,
-      gearMint,
-      potionMint
-    );
-
-    await gearMint.setAuthority(
-      gearMint.publicKey,
-      mintAuthorityPda,
-      "MintTokens",
-      wallet.publicKey,
-      []
-    );
-    await potionMint.setAuthority(
-      potionMint.publicKey,
-      mintAuthorityPda,
-      "MintTokens",
-      wallet.publicKey,
-      []
-    );
+    // All mints are owned by provided.wallet after mint - transfer ownership to program now
+    if (firstRun) {
+      await gearMint.setAuthority(
+        gearMint.publicKey,
+        mintAuth,
+        "MintTokens",
+        wallet.publicKey,
+        []
+      );
+      await potionMint.setAuthority(
+        potionMint.publicKey,
+        mintAuth,
+        "MintTokens",
+        wallet.publicKey,
+        []
+      );
+    }
+    mintMap[SHORTSWORD_MINT_ID] = gearMint;
+    mintMap[POTION_OF_STRENGTH_MINT_ID] = potionMint;
   });
   it("Is initializes!", async () => {
-    const stateAccountKeypair = anchor.web3.Keypair.generate();
-    const vrfAccountKeypair = anchor.web3.Keypair.generate();
-    stateAccount = stateAccountKeypair.publicKey;
-    vrfAccount = vrfAccountKeypair.publicKey;
-
-    await program.rpc.initializeProgram(programUstAccountBump, mintAuthBump, {
-      accounts: {
-        owner: provider.wallet.publicKey,
-        stateAccount: stateAccountKeypair.publicKey,
-        vrfAccount: vrfAccountKeypair.publicKey,
-        programUstAccount: programUstAccount,
-        ustMint: ustMint.publicKey,
-        tokenProgram: spl.TOKEN_PROGRAM_ID,
-        associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      },
-      signers: [stateAccountKeypair, vrfAccountKeypair],
-      instructions: [
-        await program.account.huntState.createInstruction(
-          stateAccountKeypair,
-          225043
-        ),
-        await program.account.vrfState.createInstruction(
-          vrfAccountKeypair,
-          20010
-        ),
-      ],
-    });
+    if (firstRun) {
+      const stateAccountKeypair = anchor.web3.Keypair.generate();
+      const vrfAccountKeypair = anchor.web3.Keypair.generate();
+      stateAccount = stateAccountKeypair.publicKey;
+      vrfAccount = vrfAccountKeypair.publicKey;
+      console.log("State account key (for saving): " + stateAccount);
+      console.log("VRF account key (for saving): " + vrfAccount);
+      // Write these two accounts so they can be referenced later
+      fs.writeFileSync(
+        DATA_FILE,
+        JSON.stringify({
+          stateAccount: stateAccount.toString(),
+          vrfAccount: vrfAccount.toString(),
+        })
+      );
+      await program.rpc.initializeProgram(programUstAccountBump, mintAuthBump, {
+        accounts: {
+          owner: provider.wallet.publicKey,
+          stateAccount: stateAccountKeypair.publicKey,
+          vrfAccount: vrfAccountKeypair.publicKey,
+          programUstAccount: programUstAccount,
+          ustMint: ustMint.publicKey,
+          tokenProgram: spl.TOKEN_PROGRAM_ID,
+          associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [stateAccountKeypair, vrfAccountKeypair],
+        instructions: [
+          await program.account.huntState.createInstruction(
+            stateAccountKeypair,
+            225043
+          ),
+          await program.account.vrfState.createInstruction(
+            vrfAccountKeypair,
+            20010
+          ),
+        ],
+      });
+    }
 
     // Fetch state after initialization.
+    // Make sure hunt state is in expected state before continuing to tests
     let huntState = await program.account.huntState.fetch(stateAccount);
     assert(huntState.isInitialized === true);
     assert(huntState.owner.equals(provider.wallet.publicKey));
 
     const huntStateArr: Array<any> = huntState.huntStateArr as Array<any>;
     assert(huntStateArr.every((x) => x.isEmpty === true));
+    let vrfState = await program.account.vrfState.fetch(vrfAccount);
+    assert(vrfState.isInitialized === true);
+  });
+  it("Creates all test users and airdrops them", async () => {
+    // Create single user for first set of tests
+    fakeUser1 = await createFakeUser(program, {
+      explorerMint,
+      ustMint,
+      gearMint,
+      mintAuth,
+      potionMint,
+      stateAccount,
+    });
+
+    // Create 10 user group for test
+    userGroup = await createFakeUsers(USER_GROUP_SIZE, program, {
+      explorerMint,
+      ustMint,
+      gearMint,
+      potionMint,
+      mintAuth,
+      stateAccount,
+    });
   });
   it("EnterHunt: Single Explorer - takes proper tokens and succeeds", async () => {
     // Setup to enter fakeUser1 into hunt.
@@ -316,8 +370,8 @@ describe("anchor-test", () => {
         fakeUser1.explorerEscrowAccount
       )
     );
-    assert(enteredExplorer.providedGearMintId === 1);
-    assert(enteredExplorer.providedPotionMintId === 2);
+    assert(enteredExplorer.providedGearMintId === SHORTSWORD_MINT_ID);
+    assert(enteredExplorer.providedPotionMintId === POTION_OF_STRENGTH_MINT_ID);
     assert(enteredExplorer.hasHunted === false);
     assert(enteredExplorer.foundTreasure === false);
     assert(
@@ -340,8 +394,10 @@ describe("anchor-test", () => {
     } catch (err) {
       const errMsg =
         "Claim is not possible yet as the Explorer has not hunted.";
+      // const altErrMsg = "A token mint constraint was violated";
       assert.equal(errMsg, err.toString());
     }
+    // Likely useless asserts below -- confirm that the transaction didn't modify anything.
     const huntState = await program.account.huntState.fetch(stateAccount);
     const huntStateArr = huntState.huntStateArr as Array<any>;
     // Confirm the user's explorer is still in the state.
@@ -387,7 +443,7 @@ describe("anchor-test", () => {
 
     let huntState = await program.account.huntState.fetch(stateAccount);
     const huntStateArr: Array<any> = huntState.huntStateArr as Array<any>;
-    // Confirm the individual entries of hunt array are still vaguely as expected
+    // Confirm the individual entries of hunt array are still as expected
     assert(huntStateArr.filter((x) => x.isEmpty).length === 4999);
     assert(huntStateArr.filter((x) => !x.isEmpty).length === 1);
     // Confirm we haven't modified any of the empty array slots.
@@ -396,31 +452,6 @@ describe("anchor-test", () => {
     assert(enteredExplorers.length === 1);
     // Confirm all entered explorers have had their hasHunted bools flipped after processing.
     assert(enteredExplorers.filter((x) => x.hasHunted === true).length === 1);
-  });
-  it("Does not allow more than one vrf call before processing", async () => {
-    let vrfState = await program.account.vrfState.fetch(vrfAccount);
-    assert(vrfState.isUsable === false);
-    await doFetchVrf({
-      program,
-      stateAccount,
-      programUstAccount,
-      vrfAccount,
-    });
-    vrfState = await program.account.vrfState.fetch(vrfAccount);
-    assert(vrfState.isUsable);
-    // This should fail
-    try {
-      await doFetchVrf({
-        program,
-        stateAccount,
-        programUstAccount,
-        vrfAccount,
-      });
-      assert.ok(false);
-    } catch (err) {
-      const errMsg = "Randomness has already been generated.";
-      assert.equal(errMsg, err.toString());
-    }
   });
   it("ClaimHunt: Single Explorer - Allows retrieval of expected tokens", async () => {
     // Fetch required data from state account first.
@@ -443,7 +474,45 @@ describe("anchor-test", () => {
       potionMint,
     });
   });
-  it("100 user test!", async () => {
+  it("Sets up VRF for next and does not allow more than one vrf call", async () => {
+    let vrfState = await program.account.vrfState.fetch(vrfAccount);
+    console.log(vrfState.vrfArr.slice(0, 1));
+    assert(vrfState.isUsable === false);
+    // VRF state was used, so should successfully refetch vrf.
+    await doFetchVrf({
+      program,
+      stateAccount,
+      programUstAccount,
+      vrfAccount,
+    });
+    vrfState = await program.account.vrfState.fetch(vrfAccount);
+
+    assert(vrfState.isUsable);
+    // Then try again immediately after - should fail
+    try {
+      await doFetchVrf({
+        program,
+        stateAccount,
+        programUstAccount,
+        vrfAccount,
+      });
+      assert.ok(false);
+    } catch (err) {
+      const errMsg = "Randomness has already been generated.";
+      assert.equal(errMsg, err.toString());
+    }
+    // Run another process to unlock VRF state. This should no-op since no explorers are entered.
+    await doProcessHunt({
+      program,
+      stateAccount,
+      programUstAccount,
+      vrfAccount,
+    });
+    vrfState = await program.account.vrfState.fetch(vrfAccount);
+
+    assert(!vrfState.isUsable);
+  });
+  it(`${USER_GROUP_SIZE} user test!`, async () => {
     // await doInitialize();
 
     await Promise.all(
@@ -470,7 +539,7 @@ describe("anchor-test", () => {
     let enteredExplorers = huntStateArr.filter((x) => !x.isEmpty);
 
     // Don't fetch because already fetchedVrf in earlier test in preparation.
-    await doProcessHunt({
+    await doFetchVrfAndProcessHunt({
       program,
       stateAccount,
       vrfAccount,
@@ -483,6 +552,7 @@ describe("anchor-test", () => {
     assert(enteredExplorers.length === USER_GROUP_SIZE);
     assert(enteredExplorers.every((x) => x.hasHunted));
 
+    const results = [];
     await Promise.all(
       userGroup.map(
         async (user) =>
@@ -494,14 +564,29 @@ describe("anchor-test", () => {
             potionMint,
             mintAuth,
             stateAccount,
+            results,
           })
       )
     );
+    // const fs = require("fs");
+    // results.forEach(({providedGearMintId,
+    //   providedPotionMintId,
+    //   combatRewardMintId,
+    //   treasureMintId,
+    //   providedGearKept,
+    //   wonCombat,
+    //   wonCombatGear,
+    //   foundTreasure,
+    //   providedPotion,
+    //   usedPotion}) => `Found treasure: ${foundTreasure}; TreasureType: ${treasureMintId}; Won combat: ${wonCombat}; Won gear: ${wonCombatGear}; combatRewardType: ${combatRewardMintId}; Expected Gear total: ${gear1ExpectedGains}; Expected potion total: ${potion1ExpectedGains};`
+
+    // fs.writeFileSync("./logs/run-log", `
+    // Init
+    // `);
     huntState = await program.account.huntState.fetch(stateAccount);
     huntStateArr = huntState.huntStateArr as Array<any>;
     // Confirm there are no non-empty slots in the array now.
     assert(huntStateArr.every((x) => x.isEmpty));
-    // assert(enteredExplorers.filter(x => ));
   });
 });
 
@@ -582,7 +667,6 @@ const doEnterHunt = async (
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-        // slot_hashes: anchor.web3.SYSVAR_
       },
       signers: [fakeUser.user],
     }
@@ -599,8 +683,11 @@ const doChecksAndClaimHunt = async (
     mintMap,
     potionMint,
     stateAccount,
+    ...other
   }
 ) => {
+  let { results } = other || {};
+
   let huntState = await program.account.huntState.fetch(stateAccount);
   let huntStateArr: Array<any> = huntState.huntStateArr as Array<any>;
   const enteredExplorer = huntStateArr.find((x) =>
@@ -616,30 +703,36 @@ const doChecksAndClaimHunt = async (
     wonCombatGear,
     foundTreasure,
     providedPotion,
-    potionUsed,
+    usedPotion,
   } = enteredExplorer;
   // TODO this needs to handle dynamic gear list (or at least the full gear list)
   let gear1ExpectedGains = 0;
   let potion1ExpectedGains = 0;
-  if (providedGearMintId === 1 && providedGearKept) {
+  if (providedGearMintId === SHORTSWORD_MINT_ID && providedGearKept) {
     gear1ExpectedGains++;
   }
-  if (combatRewardMintId === 1 && wonCombatGear) {
+  if (combatRewardMintId === SHORTSWORD_MINT_ID && wonCombatGear) {
     gear1ExpectedGains++;
   }
   if (foundTreasure) {
-    if (treasureMintId === 2) {
+    if (treasureMintId === POTION_OF_STRENGTH_MINT_ID) {
       potion1ExpectedGains++;
-    } else if (treasureMintId === 1) {
+    } else if (treasureMintId === SHORTSWORD_MINT_ID) {
       gear1ExpectedGains++;
     }
   }
-  if (providedPotionMintId === 2 && providedPotion && !potionUsed) {
+  if (
+    providedPotionMintId === POTION_OF_STRENGTH_MINT_ID &&
+    providedPotion &&
+    !usedPotion
+  ) {
     potion1ExpectedGains++;
   }
   console.log(
-    `Found treasure: ${foundTreasure} TreasureType: ${treasureMintId} Won combat ${wonCombat} Won gear: ${wonCombatGear} combatRewardType: ${combatRewardMintId} Expected Gear total: ${gear1ExpectedGains} Expected potion total: ${potion1ExpectedGains}`
+    `Found treasure: ${foundTreasure}; TreasureType: ${treasureMintId}; Won combat: ${wonCombat}; Won gear: ${wonCombatGear}; combatRewardType: ${combatRewardMintId}; Expected Gear total: ${gear1ExpectedGains}; Expected potion total: ${potion1ExpectedGains};`
   );
+  if (results != null) results.push(enteredExplorer);
+
   await doClaimHunt(fakeUser, {
     program,
     explorerMint,
@@ -660,11 +753,6 @@ const doChecksAndClaimHunt = async (
   // Confirm the explorer+gear+potion tokens were given to the user.
   assert(user1ExplorerAccount.amount.toNumber() === 1);
 
-  if (user1GearAccount.amount.toNumber() !== gear1ExpectedGains) {
-    console.log(
-      `Found treasure: ${foundTreasure} TreasureType: ${treasureMintId} Won combat ${wonCombat} Won gear: ${wonCombatGear} combatRewardType: ${combatRewardMintId} Expected Gear total: ${gear1ExpectedGains} Expected potion total: ${potion1ExpectedGains}`
-    );
-  }
   assert(user1GearAccount.amount.toNumber() === gear1ExpectedGains);
   assert(user1PotionAccount.amount.toNumber() === potion1ExpectedGains);
 
@@ -717,7 +805,7 @@ const doClaimHunt = async (
       // Example: Calling claimhunt when hunt has not processed means it is impossible to pass a assTreasureAccount that matches treasureMint
       // because treasureMintID in state is going to be 0. That's fine actually. let the error happen and catch above.
       userAssociatedTreasureAccount:
-        treasureMintId === 0 || treasureMintId === 1
+        treasureMintId === 0 || treasureMintId === SHORTSWORD_MINT_ID
           ? fakeUser.gearAccount
           : fakeUser.potionAccount,
       explorerEscrowAccount: enteredExplorer.explorerEscrowAccount,
@@ -726,14 +814,14 @@ const doClaimHunt = async (
       providedGearMint: mintMap[providedGearMintId].publicKey,
       providedPotionMint: mintMap?.[providedPotionMintId]
         ? mintMap[providedPotionMintId].publicKey
-        : mintMap[2].publicKey,
+        : mintMap[POTION_OF_STRENGTH_MINT_ID].publicKey,
       combatRewardMint: mintMap?.[combatRewardMintId]
         ? mintMap[combatRewardMintId].publicKey
-        : mintMap[1].publicKey,
+        : mintMap[SHORTSWORD_MINT_ID].publicKey,
       // defaulting to gear1 if no mint id set. could default to a bogus mint instead and let it fail with "a token mint constraint was violated."
       treasureMint: mintMap?.[treasureMintId]
         ? mintMap[treasureMintId].publicKey
-        : mintMap[1].publicKey,
+        : mintMap[SHORTSWORD_MINT_ID].publicKey,
       stateAccount: stateAccount,
       tokenProgram: spl.TOKEN_PROGRAM_ID,
       systemProgram: anchor.web3.SystemProgram.programId,

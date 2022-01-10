@@ -25,10 +25,10 @@ pub fn handler(
     if !state_account.is_initialized {
         return Err(crate::ErrorCode::AlreadyInitialized.into());
     }
-    if !vrf_account.is_initialized {
+    if vrf_account.is_initialized == false {
         return Err(crate::ErrorCode::AlreadyInitialized.into());
     }
-    if vrf_account.is_usable {
+    if vrf_account.is_usable == true {
         return Err(crate::ErrorCode::RandomnessAlreadyGenerated.into());
     }
     vrf_account.is_usable = true;
@@ -45,10 +45,13 @@ pub fn handler(
 
         // .checked_add( u64::try_from_slice(&combatant.explorer_escrow_account.key().to_bytes()[0..8]).unwrap())
         // .unwrap();
+        // msg!("ind: {}, 1: {}, 2: {}, 3: {}, 4: {}", ind, random_seed, random_seed % 100, random_seed % 2, random_seed % 5_000_000);
         *entry = PerCombatRandomization {
             winner_seed: (random_seed % 100) as u8,
             winner_gets_combat_reward_seed: (random_seed % 2) as u8,
             treasure_found_seed: (random_seed % 5_000_000) as u32,
+            fake_val: 0,
+            fake_val_2: 0,
         };
     }
 

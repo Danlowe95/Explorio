@@ -10,18 +10,20 @@ use crate::state::{HuntState, EnteredExplorer, VrfState, PerCombatRandomization}
     mint_auth_account_bump: u8,
 )]
 pub struct InitializeProgram<'info> {
-    #[account(mut)]
+    #[account(mut, constraint = owner.key().to_string().as_str().eq(crate::OWNER_KEY))]
     pub owner: Signer<'info>,
 
-    #[account(
-        zero
-    )]
+    #[account(zero)]
     pub state_account: AccountLoader<'info, HuntState>,
-    #[account(
-        zero
-    )]
+    #[account(zero)]
     pub vrf_account: AccountLoader<'info, VrfState>,
-
+    // #[account(
+    //     init,
+    //     payer = owner, 
+    //     seeds = [b"mint_info"], 
+    //     bump = mint_info_bump
+    // )]
+    // pub mint_info_account: Account<'info, MintInfoState>,
     #[account(
         init_if_needed, 
         payer = owner, 
@@ -31,8 +33,6 @@ pub struct InitializeProgram<'info> {
         bump = program_ust_account_bump, 
     )]
     pub program_ust_account: Account<'info, TokenAccount>,
-
-
     pub ust_mint: Account<'info, Mint>,
 
     pub token_program: Program<'info, Token>,
@@ -55,18 +55,15 @@ pub fn handler(
     program_ust_account_bump: u8,
     mint_auth_account_bump: u8,
 ) -> ProgramResult {
-    msg!("{}", ctx.accounts.state_account.to_account_info().data_len());
     let state_account = &mut ctx.accounts.state_account.load_init()?;
     let vrf_account = &mut ctx.accounts.vrf_account.load_init()?;
 
-    msg!("test");
     if state_account.is_initialized {
         return Err(crate::ErrorCode::AlreadyInitialized.into());
     }
-    if vrf_account.is_initialized {
+    if vrf_account.is_initialized == true {
         return Err(crate::ErrorCode::AlreadyInitialized.into());
     }
-    msg!("test2");
     state_account.is_initialized = true;
     state_account.mint_auth_account_bump = mint_auth_account_bump;
     state_account.program_ust_account_bump = program_ust_account_bump;
@@ -77,17 +74,14 @@ pub fn handler(
                 is_empty: true,
                 explorer_escrow_account: ctx.accounts.owner.key(),
                 provided_gear_mint_id: 0,
-                provided_potion_mint_id: 0, // ctx.accounts.provided_potion_mint.key(),
+                provided_potion_mint_id: 0,
                 explorer_escrow_bump: 0,
-                // // provided_gear_escrow_bump: gear_token_bump,
-                // // provided_potion_escrow_bump: 0, // potion_token_bump,
                 has_hunted: false,
                 provided_potion: false,
                 provided_gear_kept: false,
                 won_combat: false,
                 won_combat_gear: false,
                 combat_reward_mint_id: 0,
-                // // combat_reward_escrow_bump: None,
                 found_treasure: false,
                 used_potion: false,
                 treasure_mint_id: 0,
@@ -97,7 +91,7 @@ pub fn handler(
 
     vrf_account.is_initialized = true;
     vrf_account.is_usable = false;
-    vrf_account.vrf_arr = [ PerCombatRandomization {winner_seed: 0, winner_gets_combat_reward_seed: 0, treasure_found_seed: 0} ; 2500];
+    vrf_account.vrf_arr = [ PerCombatRandomization {winner_seed: 0, winner_gets_combat_reward_seed: 0, treasure_found_seed: 0, fake_val: 0, fake_val_2: 0} ; 2500];
 
     Ok(())
 }
