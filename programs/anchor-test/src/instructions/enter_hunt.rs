@@ -84,28 +84,26 @@ pub struct EnterHunt<'info> {
         let mut state_account = ctx.accounts.state_account.load_mut()?;
 
         // Verify provided gear/potion accounts are valid mints for their roles
-        msg!("{}", state_account.mint_auth_account_bump);
-
-        let mut gear_triple: Option<&crate::MintInfo> = crate::MINTS.iter().find(|x| x.id == crate::SHORTSWORD_ID); // TODO TEMP
-        // for entry in crate::MINTS.iter() {
-        //     if &entry.mint == &ctx.accounts.provided_gear_mint.key().to_string().as_str() && &entry.mint_type == "GEAR" {
-        //         gear_triple = Some(entry);
-        //         break;
-        //     }
-        // }
+        let mut gear_triple: Option<&crate::MintInfo> = None;
+        for entry in crate::MINTS.iter() {
+            if entry.mint_type == "GEAR" && entry.mint == ctx.accounts.provided_gear_mint.key().to_string().as_str() {
+                gear_triple = Some(entry);
+                break;
+            }
+        }
         
         match gear_triple {
             None => return Err(crate::ErrorCode::BadMintProvided.into()),
             _ => ()
         }
 
-        let mut potion_triple: Option<&crate::MintInfo> = crate::MINTS.iter().find(|x| x.id == crate::POT_OF_STRENGTH_ID); // TODO TEMP
-        // for entry in crate::MINTS.iter() {
-        //     if &entry.mint == &ctx.accounts.provided_potion_mint.key().to_string().as_str()  && &entry.mint_type == "POTION" {
-        //         potion_triple = Some(entry);
-        //         break;
-        //     }
-        // }
+        let mut potion_triple: Option<&crate::MintInfo> = None;
+        for entry in crate::MINTS.iter() {
+            if entry.mint_type == "POTION" && entry.mint == ctx.accounts.provided_potion_mint.key().to_string().as_str() {
+                potion_triple = Some(entry);
+                break;
+            }
+        }
         match potion_triple {
             None => return Err(crate::ErrorCode::BadMintProvided.into()),
             _ => ()
@@ -196,16 +194,17 @@ pub struct EnterHunt<'info> {
          * */
 
         let open_index = state_account.hunt_state_arr.iter().position(|x| x.is_empty).unwrap();
-        let clock = &ctx.accounts.clock;
-        msg!("clock {:#?} ", clock.unix_timestamp);
-        msg!("arr len {:#?} ", state_account.hunt_state_arr.len());
-        // let hash = ctx.accounts.slot_hashes.get(&0).unwrap();
-        // msg!("hash: {}", hash.to_string());
-        let swap_index: usize = (clock.unix_timestamp % (state_account.hunt_state_arr.len() - 1) as i64) as usize;
-        msg!("swap_index {:#?} ", swap_index);
-        // Set all necessary data in the hunt state 
-        state_account.hunt_state_arr[open_index] = state_account.hunt_state_arr[swap_index];
-        state_account.hunt_state_arr[swap_index] = EnteredExplorer {
+        // let clock = &ctx.accounts.clock;
+        // msg!("clock {:#?} ", clock.unix_timestamp);
+        // msg!("arr len {:#?} ", state_account.hunt_state_arr.len());
+        // // let hash = ctx.accounts.slot_hashes.get(&0).unwrap();
+        // // msg!("hash: {}", hash.to_string());
+        // let swap_index: usize = (clock.unix_timestamp % (state_account.hunt_state_arr.len() - 1) as i64) as usize;
+        // msg!("swap_index {:#?} ", swap_index);
+        // // Set all necessary data in the hunt state 
+        // state_account.hunt_state_arr[open_index] = state_account.hunt_state_arr[swap_index];
+        // state_account.hunt_state_arr[swap_index] = EnteredExplorer {
+        state_account.hunt_state_arr[open_index] = EnteredExplorer {
             is_empty: false,
             explorer_escrow_account: ctx.accounts.explorer_escrow_account.key(),
             provided_gear_mint_id: gear_triple.unwrap().id,

@@ -32,24 +32,23 @@ const POT_OF_MENDING_ID: u8 = 13;
 const POT_OF_RESILIENCE_ID: u8 = 14;
 
 const GRAIL_ID: u8 = 15;
-
 const MINTS: [MintInfo; 16] = [
     MintInfo{ id: 0, mint_type: "NONE", ep: 0, mint: "NONE"}, // none
-    MintInfo{ id: SHORTSWORD_ID, mint_type: "GEAR", ep: 1, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}, // gear_1: shortsword
-    MintInfo{ id: LEATHER_ARMOR_ID, mint_type: "GEAR", ep: 1, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}, // gear_2: leather_armor
-    MintInfo{ id: DAGGER_ID, mint_type: "GEAR", ep: 2, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}, // gear_3: Dagger
-    MintInfo{ id: SHORTBOW_ID, mint_type: "GEAR", ep: 2, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}, // gear_4: Shortbow
-    MintInfo{ id: LONGSWORD_ID, mint_type: "GEAR", ep: 3, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}, // gear_5: Longsword
-    MintInfo{ id: CHAINMAIL_ARMOR_ID, mint_type: "GEAR", ep: 3, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}, // gear_6: Chainmail_armor
-    MintInfo{ id: CROSSBOW_ID, mint_type: "GEAR", ep: 4, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}, // gear_7: Crossbow
-    MintInfo{ id: PLATE_ARMOR_ID, mint_type: "GEAR", ep: 5, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}, // gear_8: Plate_armor
-    MintInfo{ id: CUTTHROATS_DAGGER_ID, mint_type: "GEAR", ep: 6, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}, // gear_9: Cutthroats_dagger
-    MintInfo{ id: EXCALIBUR_ID, mint_type: "GEAR", ep: 6, mint: "EWWFTfiHWkSUDkNWvU4u7PuxCLAL2bEki57aLw9iVzzW"}, // gear_10: Excalibur
-    MintInfo{ id: POT_OF_SWIFTNESS_ID, mint_type: "POTION", ep: 0, mint: "2sHzUbXC5V6r4sn1RYFsK2Ui1rEckUFHBWLKt6SA3tqr"}, // potion_1: swiftness
-    MintInfo{ id: POT_OF_STRENGTH_ID, mint_type: "POTION", ep: 2, mint: "2sHzUbXC5V6r4sn1RYFsK2Ui1rEckUFHBWLKt6SA3tqr"}, // potion_2: strength
-    MintInfo{ id: POT_OF_MENDING_ID, mint_type: "POTION", ep: 0, mint: "2sHzUbXC5V6r4sn1RYFsK2Ui1rEckUFHBWLKt6SA3tqr"}, // potion_3: mending
-    MintInfo{ id: POT_OF_RESILIENCE_ID, mint_type: "POTION", ep: 0, mint: "2sHzUbXC5V6r4sn1RYFsK2Ui1rEckUFHBWLKt6SA3tqr"}, // potion_4: resilience
-    MintInfo{ id: GRAIL_ID, mint_type: "GRAIL", ep: 0, mint: "TBD"}, // grail
+    MintInfo{ id: SHORTSWORD_ID, mint_type: "GEAR", ep: 1, mint: "BmkWJA4kFVKFZs95v1WKFHWU1ja35WQDyHm487VPPvTH"}, // gear_1: shortsword
+    MintInfo{ id: LEATHER_ARMOR_ID, mint_type: "GEAR", ep: 1, mint: "8cB5SuMvLCFwNQor8P2L4aWRMtNyqguraPYMWeo27QR9"}, // gear_2: leather_armor
+    MintInfo{ id: DAGGER_ID, mint_type: "GEAR", ep: 2, mint: "GnQPHsM1p4hFdeETaULmsPUg5T3vaQmUHHjqJSHrSMQN"}, // gear_3: Dagger
+    MintInfo{ id: SHORTBOW_ID, mint_type: "GEAR", ep: 2, mint: "5xksBR9CJ1WDaqSvnEkqH9repcSY4gBhPHSdvdySFPse"}, // gear_4: Shortbow
+    MintInfo{ id: LONGSWORD_ID, mint_type: "GEAR", ep: 3, mint: "5T5DkM4HAaA8FHCECRFZy2My55um2DqCkqSP9jS7rMYB"}, // gear_5: Longsword
+    MintInfo{ id: CHAINMAIL_ARMOR_ID, mint_type: "GEAR", ep: 3, mint: "HnbGZVKK3UfeRfZViqUfAVj1z6Nt5bfXzAXz2sH51C4H"}, // gear_6: Chainmail_armor
+    MintInfo{ id: CROSSBOW_ID, mint_type: "GEAR", ep: 4, mint: "6LScX5ueqXj2AKpGrz4TFN66CcbVUFPcMkCHFnVLx88t"}, // gear_7: Crossbow
+    MintInfo{ id: PLATE_ARMOR_ID, mint_type: "GEAR", ep: 5, mint: "AsWk2nkyH5rUXXcFTrNsiWLFz27jnV1oraTZjAadexNt"}, // gear_8: Plate_armor
+    MintInfo{ id: CUTTHROATS_DAGGER_ID, mint_type: "GEAR", ep: 6, mint: "9zCobAXS5hpJuAB1HYH2jUBvoxj8HhykJXFJeoq16CpD"}, // gear_9: Cutthroats_dagger
+    MintInfo{ id: EXCALIBUR_ID, mint_type: "GEAR", ep: 6, mint: "5aW4JyhDBGXvPHg5GzrdcbcbbUNVbhtPscdWQHFi3A2F"}, // gear_10: Excalibur
+    MintInfo{ id: POT_OF_SWIFTNESS_ID, mint_type: "POTION", ep: 0, mint: "64EXMYpKYmnbCGxxTdhVPqMu5ygHVLuKuRfSqTSa93h6"}, // potion_1: swiftness
+    MintInfo{ id: POT_OF_STRENGTH_ID, mint_type: "POTION", ep: 2, mint: "AXS8hGMFNvFLbAwUZEZdDXVq87PLU6sWm1y3T4vAxpBv"}, // potion_2: strength
+    MintInfo{ id: POT_OF_MENDING_ID, mint_type: "POTION", ep: 0, mint: "FXMaqanFh69h29anpwaqwDAVjm7M5bQSN7ZNpvFDrZxC"}, // potion_3: mending
+    MintInfo{ id: POT_OF_RESILIENCE_ID, mint_type: "POTION", ep: 0, mint: "DMTaDS4F7ydSdX2jXGKSMEGmRhWMSuUmjU7UQUeB8HXS"}, // potion_4: resilience
+    MintInfo{ id: GRAIL_ID, mint_type: "GRAIL", ep: 0, mint: "7BnEpMkqbLcGSafPJGNBRweT6XZwLBFsLoTWzzjxthrC"}, // grail
 ];
 
 struct MintAuth {

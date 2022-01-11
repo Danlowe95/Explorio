@@ -146,7 +146,7 @@ const createFakeUsers = async (
   return arr;
 };
 
-const USER_GROUP_SIZE = 15;
+const USER_GROUP_SIZE = 300;
 describe("anchor-test", () => {
   // Configure the client to use the local cluster.\
   const provider = anchor.Provider.env();
