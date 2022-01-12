@@ -63,15 +63,3 @@ pub struct EnteredExplorer {
     // pub grail_reward_in_ust: u64,
     // hunt_id: u32, probably unnecessary considering it adds 4 bytes to every row.
 }
-
-// struct MintInfo{
-//   id: u8,
-//   mint_type: &'static str,
-//   mint: &'static str,
-//   ep: u8,
-// }
-
-// #[account]
-// pub struct MintInfoState {
-//   mints: Vec<MintInfo>,
-// }

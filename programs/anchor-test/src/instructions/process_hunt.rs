@@ -4,10 +4,44 @@ use crate::state::{HuntState, EnteredExplorer, VrfState, PerCombatRandomization}
 
 fn get_treasure_mint_id_from_val(val: u32) -> Result<u8, ProgramError> {
     return match val {
+        // Nothing
         0..=3_749_999 => Ok(0),
-        3_750_000..=3_999_999 => Ok(crate::POT_OF_STRENGTH_ID), // potion
-        4_000_000..=4_999_999 => Ok(crate::SHORTSWORD_ID), // gear
-        5_000_000 => Ok(crate::GRAIL_ID), // grail
+
+        // Potions (250_000)
+        3_750_000..=3_824_999 => Ok(crate::POT_OF_SWIFTNESS_ID), // 75,000, 30%
+        3_825_000..=3_887_499 => Ok(crate::POT_OF_STRENGTH_ID), // 62,500, 25%
+        3_887_500..=3_974_999 => Ok(crate::POT_OF_MENDING_ID), //  87,500, 35%
+        3_975_000..=3_999_999 => Ok(crate::POT_OF_RESILIENCE_ID), //  25,000, 10%
+
+        // Gear (1_000_000)
+        // 250_000 ea (500_000)
+        4_000_000..=4_249_999 => Ok(crate::SHORTSWORD_ID), // gear
+        4_250_000..=4_499_999 => Ok(crate::LEATHER_ARMOR_ID), // gear
+       
+        // 125_000 ea (250_000)
+        4_500_000..=4_624_999 => Ok(crate::DAGGER_ID), // gear
+        4_625_000..=4_749_999 => Ok(crate::SHORTBOW_ID), // gear
+        
+        // 62_500 EA (125_000)
+        4_750_000..=4_812_499 => Ok(crate::LONGSWORD_ID), // gear
+        4_812_500..=4_874_999 => Ok(crate::CHAINMAIL_ARMOR_ID), // gear
+       
+        // 62_500
+        4_875_000..=4_937_499 => Ok(crate::CROSSBOW_ID), // gear
+        
+        // 31_250
+        4_937_500..=4_968_749 => Ok(crate::PLATE_ARMOR_ID), // gear
+        
+        // 21_250
+        4_968_750..=4_989_999 => Ok(crate::TREASURE_SCROLL_ID), // gear
+       
+        // 5_000 EA
+        4_990_000..=4_994_999 => Ok(crate::CUTTHROATS_DAGGER_ID), // gear
+        4_995_000..=4_999_998 => Ok(crate::EXCALIBUR_ID), // gear
+
+        // The Holy Grail (1)
+        4_999_999 => Ok(crate::GRAIL_ID), // grail
+
         _ => Err(crate::ErrorCode::ImpossibleTreasureValue.into())
 
     }
@@ -16,8 +50,6 @@ fn get_treasure_mint_id_from_val(val: u32) -> Result<u8, ProgramError> {
 
 #[derive(Accounts)]
 pub struct ProcessHunt<'info> {
-    
-    // pub user: Signer<'info>,
     
     #[account(mut)]
     pub state_account: AccountLoader<'info, HuntState>,
@@ -38,7 +70,6 @@ pub struct ProcessHunt<'info> {
     // pub token_program: Program<'info, Token>,
     // pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
-    // pub rent: Sysvar<'info, Rent>,
     pub clock: Sysvar<'info, Clock>,
 
 }
@@ -46,7 +77,21 @@ pub struct ProcessHunt<'info> {
 // fn process_combat(computed_result: &mut PerCombatRandomization, explorer_one: &mut EnteredExplorer, explorer_two: &mut EnteredExplorer) {
 
 // }
+#[test]
+fn test_range() {
+    let mut val: u32 = 0;
+    while val < 5_000_000 {
+        // eprintln!("{}", val);
+        get_treasure_mint_id_from_val(val).unwrap();
+        val+=1;
+    }    
+    let result = get_treasure_mint_id_from_val(5_000_000);
+    assert!(result.is_err());
 
+    let result = get_treasure_mint_id_from_val(5_000_001);
+    assert!(result.is_err());
+
+}
 
 #[test]
 fn test_calcs() {
@@ -312,17 +357,17 @@ pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
         if explorer_one.is_empty {
             return Err(crate::ErrorCode::IncorrectIndexFed.into());
         }
-        // Use Potion of swiftness (chance to skip combat and search treasure)
-        // if explorer_one.provided_potion && explorer_one.provided_potion_mint_id == crate::POT_OF_SWIFTNESS {
-        //      explorer_one.used_potion = true;
-        //      process_non_combat(explorer_one);
-        // }
-        // TODO
+        let computed_result = vrf_entries.next().unwrap();
 
+        // Use Potion of swiftness (chance to skip combat and search treasure)
+        if explorer_one.provided_potion && explorer_one.provided_potion_mint_id == crate::POT_OF_SWIFTNESS_ID {
+             explorer_one.used_potion = true;
+             process_non_combat(explorer_one, computed_result)?;
+             continue;
+        }
         // The potential entry of the explorer this one will fight.
         let opt_explorer_two = all_entered.next();
         // The computed results for this pairing.
-        let computed_result = vrf_entries.next().unwrap();
 
         // No combatant - odd number of explorers: just treasure hunting for this one.
         if opt_explorer_two.is_none() {

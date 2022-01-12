@@ -2,6 +2,8 @@ explorio.code-workspace
 test-ledger/
 local/initialized_data.json
 local/rust_crate.txt
+local/initialized_accounts.json
+local/results.json
 .anchor
 .DS_Store
 target
