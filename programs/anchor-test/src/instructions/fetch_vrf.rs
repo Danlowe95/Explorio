@@ -1,8 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::program_pack::IsInitialized;
-use crate::state::{HuntState, EnteredExplorer, VrfState, PerCombatRandomization};
+use crate::state::{HuntState, VrfState, PerCombatRandomization};
 use anchor_lang::solana_program::hash::*;
-use std::convert::TryInto;
 
 #[derive(Accounts)]
 pub struct FetchVrf<'info> {

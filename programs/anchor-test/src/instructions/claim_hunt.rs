@@ -117,8 +117,8 @@ pub struct ClaimHunt<'info> {
         // Confirm that the provided_gear_mint is a valid gear mint, and that it matches the gear_mint_id in state
         for entry in crate::MINTS.iter() {
             if entry.id == entered_explorer_data.provided_gear_mint_id &&
-                entry.mint_type == "GEAR" && 
-                entry.mint == ctx.accounts.provided_gear_mint.key().to_string().as_str() 
+                entry.mint_type == crate::GEAR_TYPE && 
+                entry.mint == &ctx.accounts.provided_gear_mint.key().to_string()  
                 {
                 provided_gear_triple = Some(entry);
                 break;
@@ -134,8 +134,8 @@ pub struct ClaimHunt<'info> {
         if entered_explorer_data.provided_potion {
             for entry in crate::MINTS.iter() {
                 if entry.id == entered_explorer_data.provided_potion_mint_id &&
-                    entry.mint_type == "POTION" && 
-                    entry.mint == ctx.accounts.provided_potion_mint.key().to_string().as_str()
+                    entry.mint_type == crate::POTION_TYPE && 
+                    entry.mint == &ctx.accounts.provided_potion_mint.key().to_string() 
                      {
                     provided_potion_triple = Some(entry);
                     break;
@@ -155,8 +155,8 @@ pub struct ClaimHunt<'info> {
         if entered_explorer_data.won_combat_gear {
             for entry in crate::MINTS.iter() {
                 if  entry.id == entered_explorer_data.combat_reward_mint_id && 
-                    entry.mint_type == "GEAR" && 
-                    entry.mint == ctx.accounts.combat_reward_mint.key().to_string().as_str()
+                    entry.mint_type == crate::GEAR_TYPE && 
+                    entry.mint == &ctx.accounts.combat_reward_mint.key().to_string() 
                     {
                     combat_reward_triple = Some(entry);
                     break;
@@ -173,7 +173,7 @@ pub struct ClaimHunt<'info> {
         if entered_explorer_data.found_treasure {
             for entry in crate::MINTS.iter() {
                 if entry.id == entered_explorer_data.treasure_mint_id && 
-                entry.mint == ctx.accounts.treasure_mint.key().to_string().as_str()
+                entry.mint == &ctx.accounts.treasure_mint.key().to_string() 
                      {
                     treasure_reward_triple = Some(entry);
                     break;

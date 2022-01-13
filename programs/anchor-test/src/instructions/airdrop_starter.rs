@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::state::{HuntState, EnteredExplorer};
+use crate::state::{HuntState};
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use anchor_spl::associated_token::{AssociatedToken};
 
@@ -18,13 +18,13 @@ pub struct AirdropStarter<'info> {
         associated_token::authority = user,
     )]
     pub user_shortsword_associated_account: Box<Account<'info, TokenAccount>>,
-    #[account(
-        init_if_needed,
-        payer = user,
-        associated_token::mint = strength_potion_mint,
-        associated_token::authority = user,
-    )]
-    pub user_strength_potion_associated_account: Box<Account<'info, TokenAccount>>,
+    // #[account(
+    //     init_if_needed,
+    //     payer = user,
+    //     associated_token::mint = strength_potion_mint,
+    //     associated_token::authority = user,
+    // )]
+    // pub user_strength_potion_associated_account: Box<Account<'info, TokenAccount>>,
 
     // #[account(mut, constraint = provided_gear_pda.mint == shortsword_mint.key())]
     // pub provided_gear_pda: Box<Account<'info, TokenAccount>>,
@@ -34,8 +34,8 @@ pub struct AirdropStarter<'info> {
     #[account(mut)]
     pub shortsword_mint: Box<Account<'info, Mint>>,
     // #[account(mut, constraint = provided_potion_pda.mint == strength_potion_mint)]
-    #[account(mut)]
-    pub strength_potion_mint: Box<Account<'info, Mint>>,
+    // #[account(mut)]
+    // pub strength_potion_mint: Box<Account<'info, Mint>>,
 
     // #[account(mut)]
     // pub state_account: AccountLoader<'info, HuntState>,
@@ -78,24 +78,24 @@ pub struct AirdropStarter<'info> {
             ),
             1,
         )?;
-        // mint the user's potion token.
-        anchor_spl::token::mint_to(
-            CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                anchor_spl::token::MintTo {
-                    mint: ctx.accounts.strength_potion_mint.to_account_info(),
-                    to: ctx.accounts.user_strength_potion_associated_account.to_account_info(),
-                    authority: ctx
-                        .accounts
-                        .mint_auth
-                        .to_account_info(),
-                },
-                &[&[
-                    crate::MINT_AUTH.seed,
-                    &[ctx.accounts.state_account.load()?.mint_auth_account_bump],
-                ]],
-            ),
-            1,
-        )?;
+        // // mint the user's potion token.
+        // anchor_spl::token::mint_to(
+        //     CpiContext::new_with_signer(
+        //         ctx.accounts.token_program.to_account_info(),
+        //         anchor_spl::token::MintTo {
+        //             mint: ctx.accounts.strength_potion_mint.to_account_info(),
+        //             to: ctx.accounts.user_strength_potion_associated_account.to_account_info(),
+        //             authority: ctx
+        //                 .accounts
+        //                 .mint_auth
+        //                 .to_account_info(),
+        //         },
+        //         &[&[
+        //             crate::MINT_AUTH.seed,
+        //             &[ctx.accounts.state_account.load()?.mint_auth_account_bump],
+        //         ]],
+        //     ),
+        //     1,
+        // )?;
         Ok(())
     }

@@ -8,7 +8,9 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 #[derive(Accounts)]
 #[instruction(
     explorer_token_bump: u8, 
-    provided_potion: bool
+    provided_potion: bool,
+    provided_gear_id: u8,
+    provided_potion_id: u8,
 )]
 pub struct EnterHunt<'info> {
     #[account(mut)]
@@ -80,13 +82,18 @@ pub struct EnterHunt<'info> {
         ctx: Context<EnterHunt>,
         explorer_token_bump: u8,
         provided_potion: bool,
+        provided_gear_id: u8,
+        provided_potion_id: u8,
     ) -> ProgramResult {
         let mut state_account = ctx.accounts.state_account.load_mut()?;
 
         // Verify provided gear/potion accounts are valid mints for their roles
         let mut gear_triple: Option<&crate::MintInfo> = None;
-        for entry in crate::MINTS.iter() {
-            if entry.mint_type == "GEAR" && entry.mint == ctx.accounts.provided_gear_mint.key().to_string().as_str() {
+        // Gear is required.
+        for entry in crate::MINTS.iter() {            
+            if entry.id == provided_gear_id && 
+            entry.mint_type == crate::GEAR_TYPE && 
+            entry.mint == &ctx.accounts.provided_gear_mint.key().to_string() {
                 gear_triple = Some(entry);
                 break;
             }
@@ -97,11 +104,21 @@ pub struct EnterHunt<'info> {
             _ => ()
         }
 
+        // Potion is optional.
         let mut potion_triple: Option<&crate::MintInfo> = None;
-        for entry in crate::MINTS.iter() {
-            if entry.mint_type == "POTION" && entry.mint == ctx.accounts.provided_potion_mint.key().to_string().as_str() {
-                potion_triple = Some(entry);
-                break;
+        if provided_potion_id == 0 {
+            if provided_potion {
+                return Err(crate::ErrorCode::BadMintProvided.into());
+            }
+            potion_triple = Some(&crate::MINTS[0]);
+        } else {
+            for entry in crate::MINTS.iter() {
+                if entry.id == provided_potion_id &&
+                 entry.mint_type == crate::POTION_TYPE && 
+                 entry.mint == &ctx.accounts.provided_potion_mint.key().to_string() {
+                    potion_triple = Some(entry);
+                    break;
+                }
             }
         }
         match potion_triple {
@@ -136,8 +153,9 @@ pub struct EnterHunt<'info> {
             ),
             1,
         )?;
+
         if provided_potion {
-            // Burn the user's potion token.
+            // Burn the user's potion token, if provided.
             anchor_spl::token::burn(
                 CpiContext::new(
                     ctx.accounts.token_program.to_account_info(),

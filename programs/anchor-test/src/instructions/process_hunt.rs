@@ -262,7 +262,12 @@ fn calc_ep(explorer: &mut EnteredExplorer) -> i8 {
     // from gear
     let gear_ep: i8 = crate::MINTS.iter().find(|x| x.id == explorer.provided_gear_mint_id).unwrap().ep;
     // from potion
-    let potion_ep: i8 = crate::MINTS.iter().find(|x| x.id == explorer.provided_potion_mint_id).unwrap().ep;
+    let potion_ep: i8 = if explorer.provided_potion {
+        crate::MINTS.iter().find(|x| x.id == explorer.provided_potion_mint_id).unwrap().ep
+    } else {
+        0
+    };
+    
     // burn if potion provided EP (potion of strength)
     if potion_ep > 0 {
         explorer.used_potion = true;
@@ -314,7 +319,7 @@ fn process_combat(explorer_one: &mut EnteredExplorer, explorer_two: &mut Entered
     // set reward gear if given,
     if !loser_gear_burned {
         winner.combat_reward_mint_id = loser.provided_gear_mint_id;
-    } else if loser.provided_potion_mint_id == crate::POT_OF_MENDING_ID {
+    } else if loser.provided_potion && loser.provided_potion_mint_id == crate::POT_OF_MENDING_ID {
         // If gear is to be burned and loser has potion of mending, let them keep it.
         loser.used_potion = true;
         loser.provided_gear_kept = true;

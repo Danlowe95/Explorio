@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::program_pack::IsInitialized;
 use anchor_spl::token::{Token, TokenAccount, Mint};
 use anchor_spl::associated_token::{AssociatedToken};
 use crate::state::{HuntState, EnteredExplorer, VrfState, PerCombatRandomization};
