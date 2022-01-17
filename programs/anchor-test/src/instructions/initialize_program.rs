@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount, Mint};
-use anchor_spl::associated_token::{AssociatedToken};
-use crate::state::{HuntState, EnteredExplorer, VrfState, PerCombatRandomization};
+use anchor_spl::associated_token::AssociatedToken;
+use crate::state::{HuntState, EnteredExplorer, VrfState, PerCombatRandomization, HistoryState, HistoryRow, MAX_HISTORY_ROWS};
 
 #[derive(Accounts)]
 #[instruction(
@@ -16,13 +16,9 @@ pub struct InitializeProgram<'info> {
     pub state_account: AccountLoader<'info, HuntState>,
     #[account(zero)]
     pub vrf_account: AccountLoader<'info, VrfState>,
-    // #[account(
-    //     init,
-    //     payer = owner, 
-    //     seeds = [b"mint_info"], 
-    //     bump = mint_info_bump
-    // )]
-    // pub mint_info_account: Account<'info, MintInfoState>,
+    #[account(zero)]
+    pub history_account: AccountLoader<'info, HistoryState>,
+
     #[account(
         init_if_needed, 
         payer = owner, 
@@ -39,15 +35,6 @@ pub struct InitializeProgram<'info> {
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }
-    // Eventually
-    // #[account(
-    //     init, 
-    //     payer = authority, 
-    //     seeds = ["history_account"],
-    //     bump = state_account_bump, 
-    //     space = 1048576 // 1Mb
-    // )]
-    // pub history_account: Account<'info, HuntHistory>,
 
 pub fn handler(
     ctx: Context<InitializeProgram>, 
@@ -56,41 +43,51 @@ pub fn handler(
 ) -> ProgramResult {
     let state_account = &mut ctx.accounts.state_account.load_init()?;
     let vrf_account = &mut ctx.accounts.vrf_account.load_init()?;
+    let history_account = &mut ctx.accounts.history_account.load_init()?;
 
-    if state_account.is_initialized {
+    if state_account.is_initialized == crate::TRUE {
         return Err(crate::ErrorCode::AlreadyInitialized.into());
     }
-    if vrf_account.is_initialized == true {
+    if vrf_account.is_initialized == (crate::TRUE) {
         return Err(crate::ErrorCode::AlreadyInitialized.into());
     }
-    state_account.is_initialized = true;
+
+    state_account.is_initialized = crate::TRUE;
     state_account.mint_auth_account_bump = mint_auth_account_bump;
     state_account.program_ust_account_bump = program_ust_account_bump;
 
     state_account.owner = ctx.accounts.owner.key();
     state_account.hunt_state_arr = [
             EnteredExplorer {
-                is_empty: true,
+                is_empty: crate::TRUE,
                 explorer_escrow_account: ctx.accounts.owner.key(),
+                explorer_id: 0,
                 provided_gear_mint_id: 0,
                 provided_potion_mint_id: 0,
                 explorer_escrow_bump: 0,
-                has_hunted: false,
-                provided_potion: false,
-                provided_gear_kept: false,
-                won_combat: false,
-                won_combat_gear: false,
+                has_hunted: crate::FALSE,
+                provided_potion: crate::FALSE,
+                provided_gear_kept: crate::FALSE,
+                won_combat: crate::FALSE,
+                won_combat_gear: crate::FALSE,
                 combat_reward_mint_id: 0,
-                found_treasure: false,
-                used_potion: false,
+                found_treasure: crate::FALSE,
+                used_potion: crate::FALSE,
                 treasure_mint_id: 0,
-                // grail_reward_in_ust: 0,
+                unused_value: 0,
         
             }; 5000];
 
-    vrf_account.is_initialized = true;
-    vrf_account.is_usable = false;
-    vrf_account.vrf_arr = [ PerCombatRandomization {winner_seed: 0, winner_gets_combat_reward_seed: 0, treasure_found_seed: 0, fake_val: 0, fake_val_2: 0} ; 2500];
+    vrf_account.is_initialized = crate::TRUE;
+    vrf_account.is_usable = crate::FALSE;
+    vrf_account.vrf_arr = [ PerCombatRandomization {winner_seed: 0, winner_gets_combat_reward_seed: 0, treasure_found_seed: 0, resilience_seed: 0,  swiftness_seed: 0} ; 2500];
+
+    history_account.total_hunts = 0;
+    history_account.total_explorers = 0;
+    history_account.total_gear_burned = 0;
+    history_account.total_per = [0; 17];
+    history_account.write_ind = 0;
+    history_account.history_arr =  [HistoryRow { hunt_id: 0, winner: 0, loser: 0, loser_gear: 0, winner_gear: 0, transfer: crate::FALSE, treasure_id: 0}; MAX_HISTORY_ROWS];
 
     Ok(())
 }

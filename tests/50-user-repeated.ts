@@ -6,7 +6,15 @@ import assert = require("assert");
 import { AnchorTest } from "../target/types/anchor_test";
 import env from "../local/env.json";
 
-import { USER_GROUP_SIZE, MintMap, FakeUser, TREASURE_NAMES } from "./consts";
+import {
+  USER_GROUP_SIZE,
+  MintMap,
+  FakeUser,
+  TREASURE_NAMES,
+  HUNT_ACCOUNT_SIZE,
+  VRF_ACCOUNT_SIZE,
+  HISTORY_ACCOUNT_SIZE,
+} from "./consts";
 
 import {
   createFakeUser,
@@ -31,6 +39,7 @@ const USER_ACCOUNTS_FILE = `./local/initialized_accounts.json`;
 let initializedData: {
   stateAccount: anchor.web3.PublicKey | null;
   vrfAccount: anchor.web3.PublicKey | null;
+  historyAccount: anchor.web3.PublicKey | null;
   explorerMint: spl.Token | null;
   ustMint: spl.Token | null;
 };
@@ -57,13 +66,12 @@ describe("50-user-repeated", () => {
   let mintAuthBump: number;
   // TODO don't require copy/paste of this
 
-  let fakeUser1: FakeUser;
   let userGroup: FakeUser[] = [];
   let programUstAccount: anchor.web3.PublicKey;
   let programUstAccountBump: number;
   let stateAccount: anchor.web3.PublicKey;
   let vrfAccount: anchor.web3.PublicKey;
-
+  let historyAccount: anchor.web3.PublicKey;
   // Experimental
   let mintMap: MintMap = {};
   let firstRun = true;
@@ -92,6 +100,7 @@ describe("50-user-repeated", () => {
       initializedData = {
         stateAccount: new anchor.web3.PublicKey(parsedData.stateAccount),
         vrfAccount: new anchor.web3.PublicKey(parsedData.vrfAccount),
+        historyAccount: new anchor.web3.PublicKey(parsedData.historyAccount),
         explorerMint: new spl.Token(
           program.provider.connection,
           new anchor.web3.PublicKey(parsedData.explorerMint),
@@ -111,6 +120,7 @@ describe("50-user-repeated", () => {
       ustMint = initializedData.ustMint;
       stateAccount = initializedData.stateAccount;
       vrfAccount = initializedData.vrfAccount;
+      historyAccount = initializedData.historyAccount;
     }
 
     firstRun = stateAccount == null;
@@ -163,10 +173,14 @@ describe("50-user-repeated", () => {
 
       const stateAccountKeypair = anchor.web3.Keypair.generate();
       const vrfAccountKeypair = anchor.web3.Keypair.generate();
+      const historyAccountKeypair = anchor.web3.Keypair.generate();
+
       stateAccount = stateAccountKeypair.publicKey;
       vrfAccount = vrfAccountKeypair.publicKey;
+      historyAccount = historyAccountKeypair.publicKey;
       console.log("State account key (for saving): " + stateAccount);
       console.log("VRF account key (for saving): " + vrfAccount);
+      console.log("History account key (for saving): " + historyAccount);
       console.log("Explorer mint key (for saving): " + explorerMint.publicKey);
       console.log("UST mint key (for saving): " + ustMint.publicKey);
       // Write these two accounts so they can be referenced later
@@ -175,6 +189,7 @@ describe("50-user-repeated", () => {
         JSON.stringify({
           stateAccount: stateAccount.toString(),
           vrfAccount: vrfAccount.toString(),
+          historyAccount: historyAccount.toString(),
           explorerMint: explorerMint.publicKey.toString(),
           ustMint: ustMint.publicKey.toString(),
         })
@@ -184,6 +199,7 @@ describe("50-user-repeated", () => {
           owner: provider.wallet.publicKey,
           stateAccount: stateAccountKeypair.publicKey,
           vrfAccount: vrfAccountKeypair.publicKey,
+          historyAccount: historyAccountKeypair.publicKey,
           programUstAccount: programUstAccount,
           ustMint: ustMint.publicKey,
           tokenProgram: spl.TOKEN_PROGRAM_ID,
@@ -191,15 +207,23 @@ describe("50-user-repeated", () => {
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
-        signers: [stateAccountKeypair, vrfAccountKeypair],
+        signers: [
+          stateAccountKeypair,
+          vrfAccountKeypair,
+          historyAccountKeypair,
+        ],
         instructions: [
           await program.account.huntState.createInstruction(
             stateAccountKeypair,
-            225043
+            HUNT_ACCOUNT_SIZE
           ),
           await program.account.vrfState.createInstruction(
             vrfAccountKeypair,
-            20010
+            VRF_ACCOUNT_SIZE
+          ),
+          await program.account.historyState.createInstruction(
+            historyAccountKeypair,
+            HISTORY_ACCOUNT_SIZE
           ),
         ],
       });
@@ -208,23 +232,15 @@ describe("50-user-repeated", () => {
     // Fetch state after initialization.
     // Make sure hunt state is in expected state before continuing to tests
     let huntState = await program.account.huntState.fetch(stateAccount);
-    assert(huntState.isInitialized === true);
+    assert(huntState.isInitialized === 1);
     assert(huntState.owner.equals(provider.wallet.publicKey));
 
     const huntStateArr: Array<any> = huntState.huntStateArr as Array<any>;
     // assert(huntStateArr.every((x) => x.isEmpty === true));
     let vrfState = await program.account.vrfState.fetch(vrfAccount);
-    assert(vrfState.isInitialized === true);
+    assert(vrfState.isInitialized === 1);
   });
   it("Creates all test users and airdrops them", async () => {
-    // Create single user for first set of tests
-    fakeUser1 = await createFakeUser(program, {
-      explorerMint,
-      ustMint,
-      mintMap,
-      mintAuth,
-      stateAccount,
-    });
     // Load userGroup from saved file (if available) or create them and store.
     if (initializedUsers && initializedUsers.length !== 0) {
       userGroup = recreateFromInitializedUsers(initializedUsers);
@@ -280,7 +296,7 @@ describe("50-user-repeated", () => {
 
     // logAccountState(userGroup);
 
-    while (runNumber < 200) {
+    while (runNumber < 50) {
       await airdropUserGroupIfNeeded(
         program,
         userGroup,
@@ -292,6 +308,7 @@ describe("50-user-repeated", () => {
         userGroup,
         program,
         explorerMint,
+        historyAccount,
         mintMap,
         mintAuth,
         stateAccount,
@@ -299,10 +316,29 @@ describe("50-user-repeated", () => {
         programUstAccount,
         fs,
         results,
-        doLog: false,
+        doLog: runNumber % 10 == 0,
       });
       runNumber++;
       if (runNumber % 10 == 0) {
+        // Health checks: Slice of history Arr, slice of vrfArray, write results so far to file
+        let historyState = await program.account.historyState.fetch(
+          historyAccount
+        );
+        console.log("Writeind: " + historyState.writeInd);
+        console.log(
+          historyState.historyArr.slice(
+            historyState.writeInd - 3,
+            historyState.writeInd - 1
+          )
+        );
+        const {
+          totalExplorers,
+          totalGearBurned,
+          totalHunts,
+          totalPer,
+          historyArr,
+          writeInd,
+        } = historyState;
         const prettifiedResults = {
           ...results,
           treasureById: Object.fromEntries(
@@ -311,7 +347,28 @@ describe("50-user-repeated", () => {
               num,
             ])
           ),
+          totalExplorers: totalExplorers.toNumber(),
+          totalGearBurned: totalGearBurned.toNumber(),
+          totalHunts: totalHunts.toNumber(),
+          totalPer: Object.fromEntries(
+            totalPer.map((entry, ind) => [
+              TREASURE_NAMES[ind],
+              entry.toNumber(),
+            ])
+          ),
+          recentHistoryRow: historyArr[writeInd - 2],
         };
+        // Confirm our results array matches up with on-chain history state data.
+        // assert(
+        //   totalExplorers.toNumber() ===
+        //     results.totalProcessed + totalResults.totalProcessed
+        // );
+        // totalPer.map((entry, ind) => [
+        //   TREASURE_NAMES[ind],
+        //   results.treasureById[ind] + totalResults.treasureById[ind] ==
+        //     entry.toNumber(),
+        // ]);
+
         fs.writeFileSync(
           resultString(runNumber),
           JSON.stringify(prettifiedResults)

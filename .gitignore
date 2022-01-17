@@ -4,6 +4,7 @@ local/initialized_data.json
 local/rust_crate.txt
 local/initialized_accounts.json
 local/results.json
+local/results/
 .anchor
 .DS_Store
 target

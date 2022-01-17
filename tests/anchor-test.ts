@@ -10,6 +10,9 @@ import {
   DATA_FILE,
   USER_ACCOUNTS_FILE,
   RESULTS_FILE,
+  HUNT_ACCOUNT_SIZE,
+  VRF_ACCOUNT_SIZE,
+  HISTORY_ACCOUNT_SIZE,
   USER_GROUP_SIZE,
   NONE_ID,
   SHORTSWORD_ID,
@@ -52,6 +55,7 @@ const { mints } = env;
 let initializedData: {
   stateAccount: anchor.web3.PublicKey | null;
   vrfAccount: anchor.web3.PublicKey | null;
+  historyAccount: anchor.web3.PublicKey | null;
   explorerMint: spl.Token | null;
   ustMint: spl.Token | null;
 };
@@ -84,6 +88,7 @@ describe("anchor-test", () => {
   let programUstAccountBump: number;
   let stateAccount: anchor.web3.PublicKey;
   let vrfAccount: anchor.web3.PublicKey;
+  let historyAccount: anchor.web3.PublicKey;
 
   // Experimental
   let mintMap: MintMap = {};
@@ -113,6 +118,7 @@ describe("anchor-test", () => {
       initializedData = {
         stateAccount: new anchor.web3.PublicKey(parsedData.stateAccount),
         vrfAccount: new anchor.web3.PublicKey(parsedData.vrfAccount),
+        historyAccount: new anchor.web3.PublicKey(parsedData.historyAccount),
         explorerMint: new spl.Token(
           program.provider.connection,
           new anchor.web3.PublicKey(parsedData.explorerMint),
@@ -132,6 +138,7 @@ describe("anchor-test", () => {
       ustMint = initializedData.ustMint;
       stateAccount = initializedData.stateAccount;
       vrfAccount = initializedData.vrfAccount;
+      historyAccount = initializedData.historyAccount;
     }
 
     firstRun = stateAccount == null;
@@ -184,18 +191,22 @@ describe("anchor-test", () => {
 
       const stateAccountKeypair = anchor.web3.Keypair.generate();
       const vrfAccountKeypair = anchor.web3.Keypair.generate();
+      const historyAccountKeypair = anchor.web3.Keypair.generate();
       stateAccount = stateAccountKeypair.publicKey;
       vrfAccount = vrfAccountKeypair.publicKey;
+      historyAccount = historyAccountKeypair.publicKey;
       console.log("State account key (for saving): " + stateAccount);
       console.log("VRF account key (for saving): " + vrfAccount);
       console.log("Explorer mint key (for saving): " + explorerMint.publicKey);
       console.log("UST mint key (for saving): " + ustMint.publicKey);
+      console.log("history key (for saving): " + historyAccount);
       // Write these two accounts so they can be referenced later
       fs.writeFileSync(
         DATA_FILE,
         JSON.stringify({
           stateAccount: stateAccount.toString(),
           vrfAccount: vrfAccount.toString(),
+          historyAccount: historyAccount.toString(),
           explorerMint: explorerMint.publicKey.toString(),
           ustMint: ustMint.publicKey.toString(),
         })
@@ -205,6 +216,7 @@ describe("anchor-test", () => {
           owner: provider.wallet.publicKey,
           stateAccount: stateAccountKeypair.publicKey,
           vrfAccount: vrfAccountKeypair.publicKey,
+          historyAccount: historyAccountKeypair.publicKey,
           programUstAccount: programUstAccount,
           ustMint: ustMint.publicKey,
           tokenProgram: spl.TOKEN_PROGRAM_ID,
@@ -212,15 +224,23 @@ describe("anchor-test", () => {
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
-        signers: [stateAccountKeypair, vrfAccountKeypair],
+        signers: [
+          stateAccountKeypair,
+          vrfAccountKeypair,
+          historyAccountKeypair,
+        ],
         instructions: [
           await program.account.huntState.createInstruction(
             stateAccountKeypair,
-            225043
+            HUNT_ACCOUNT_SIZE
           ),
           await program.account.vrfState.createInstruction(
             vrfAccountKeypair,
-            20010
+            VRF_ACCOUNT_SIZE
+          ),
+          await program.account.historyState.createInstruction(
+            historyAccountKeypair,
+            HISTORY_ACCOUNT_SIZE
           ),
         ],
       });
@@ -229,17 +249,24 @@ describe("anchor-test", () => {
     // Fetch state after initialization.
     // Make sure hunt state is in expected state before continuing to tests
     let huntState = await program.account.huntState.fetch(stateAccount);
-    assert(huntState.isInitialized === true);
+    assert(huntState.isInitialized === 1);
     assert(huntState.owner.equals(provider.wallet.publicKey));
 
     const huntStateArr: Array<any> = huntState.huntStateArr as Array<any>;
     // assert(huntStateArr.every((x) => x.isEmpty === true));
     let vrfState = await program.account.vrfState.fetch(vrfAccount);
-    assert(vrfState.isInitialized === true);
+    assert(vrfState.isInitialized === 1);
+
+    let historyState = await program.account.historyState.fetch(historyAccount);
+    // assert(historyState.totalHunts.toNumber() === 0);
+    console.log("History:");
+    console.log(historyState.totalHunts.toNumber());
+    console.log(historyState.totalExplorers.toNumber());
   });
   it("Creates all test users and airdrops them", async () => {
     // Create single user for first set of tests
     fakeUser1 = await createFakeUser(program, {
+      explorerId: 0,
       explorerMint,
       ustMint,
       mintMap,
@@ -336,10 +363,10 @@ describe("anchor-test", () => {
     // Confirm state account now has a single entry with isEmpty: false, with proper data inside.
     let huntState = await program.account.huntState.fetch(stateAccount);
     let huntStateArr: Array<any> = huntState.huntStateArr as Array<any>;
-
-    assert(huntStateArr.filter((x) => x.isEmpty).length === 4999);
-    assert(huntStateArr.filter((x) => !x.isEmpty).length === 1);
-    const enteredExplorer = huntStateArr.find((x) => x.isEmpty === false);
+    console.log(huntStateArr.slice(0, 1));
+    assert(huntStateArr.filter((x) => x.isEmpty === 1).length === 4999);
+    assert(huntStateArr.filter((x) => x.isEmpty === 0).length === 1);
+    const enteredExplorer = huntStateArr.find((x) => x.isEmpty === 0);
     assert(
       enteredExplorer.explorerEscrowAccount.equals(
         fakeUser1.explorerEscrowAccount
@@ -348,8 +375,8 @@ describe("anchor-test", () => {
     assert(enteredExplorer.providedGearMintId === SHORTSWORD_ID);
     // No potion entered, so providedPotionMintId should be 0
     assert(enteredExplorer.providedPotionMintId === NONE_ID);
-    assert(enteredExplorer.hasHunted === false);
-    assert(enteredExplorer.foundTreasure === false);
+    assert(enteredExplorer.hasHunted === 0);
+    assert(enteredExplorer.foundTreasure === 0);
     assert(
       enteredExplorer.explorerEscrowBump === fakeUser1.explorerEscrowAccountBump
     );
@@ -399,6 +426,7 @@ describe("anchor-test", () => {
         stateAccount,
         programUstAccount,
         vrfAccount,
+        historyAccount,
       });
       assert.ok(false);
     } catch (err) {
@@ -413,19 +441,20 @@ describe("anchor-test", () => {
       stateAccount,
       programUstAccount,
       vrfAccount,
+      historyAccount,
     });
 
     let huntState = await program.account.huntState.fetch(stateAccount);
     const huntStateArr: Array<any> = huntState.huntStateArr as Array<any>;
     // Confirm the individual entries of hunt array are still as expected
-    assert(huntStateArr.filter((x) => x.isEmpty).length === 4999);
-    assert(huntStateArr.filter((x) => !x.isEmpty).length === 1);
+    assert(huntStateArr.filter((x) => x.isEmpty === 1).length === 4999);
+    assert(huntStateArr.filter((x) => x.isEmpty === 0).length === 1);
     // Confirm we haven't modified any of the empty array slots.
     assert(huntStateArr.filter((x) => x.isEmpty && x.hasHunted).length === 0);
-    const enteredExplorers = huntStateArr.filter((x) => x.isEmpty === false);
+    const enteredExplorers = huntStateArr.filter((x) => x.isEmpty === 0);
     assert(enteredExplorers.length === 1);
     // Confirm all entered explorers have had their hasHunted bools flipped after processing.
-    assert(enteredExplorers.filter((x) => x.hasHunted === true).length === 1);
+    assert(enteredExplorers.filter((x) => x.hasHunted === 1).length === 1);
   });
   it("ClaimHunt: Single Explorer - Allows retrieval of expected tokens", async () => {
     // Fetch required data from state account first.
@@ -455,7 +484,7 @@ describe("anchor-test", () => {
   it("Sets up VRF for next and does not allow more than one vrf call", async () => {
     let vrfState = await program.account.vrfState.fetch(vrfAccount);
     console.log(vrfState.vrfArr.slice(0, 1));
-    assert(vrfState.isUsable === false);
+    assert(vrfState.isUsable === 0);
     // VRF state was used, so should successfully refetch vrf.
     await doFetchVrf({
       program,
@@ -485,10 +514,13 @@ describe("anchor-test", () => {
       stateAccount,
       programUstAccount,
       vrfAccount,
+      historyAccount,
     });
     vrfState = await program.account.vrfState.fetch(vrfAccount);
-
-    assert(!vrfState.isUsable);
+    const historyState = await program.account.historyState.fetch(
+      historyAccount
+    );
+    assert(vrfState.isUsable === 0);
   });
   it(`${USER_GROUP_SIZE} user test!`, async () => {
     await runUserGroupTest({
@@ -499,8 +531,11 @@ describe("anchor-test", () => {
       mintAuth,
       stateAccount,
       vrfAccount,
+      historyAccount,
       programUstAccount,
       fs,
+      results: undefined,
+      doLog: true,
     });
   });
 });

@@ -38,12 +38,14 @@ import {
 export const createFakeUser = async (
   program: anchor.Program<AnchorTest>,
   {
+    explorerId,
     explorerMint,
     ustMint,
     mintMap,
     mintAuth,
     stateAccount,
   }: {
+    explorerId: number;
     explorerMint: spl.Token;
     ustMint: spl.Token;
     mintMap: MintMap;
@@ -110,6 +112,7 @@ export const createFakeUser = async (
   accountHoldings[SHORTSWORD_ID] = 1;
   return {
     user: fakeUser,
+    explorerId: explorerId,
     explorerAccount: fakeUserExplorerAccount,
     explorerEscrowAccount: explorerEscrowAccount,
     explorerEscrowAccountBump: expEscrowBump,
@@ -139,6 +142,7 @@ export const createFakeUsers = async (
   for (let i = 0; i < num; i++) {
     arr.push(
       await createFakeUser(program, {
+        explorerId: i + 1,
         explorerMint,
         ustMint,
         mintMap,
@@ -280,6 +284,7 @@ export const recreateFromInitializedUsers = (initializedUsers): FakeUser[] =>
     user: anchor.web3.Keypair.fromSecretKey(
       new Uint8Array(Object.values(userData.user._keypair.secretKey))
     ),
+    explorerId: userData.explorerId,
     explorerAccount: new anchor.web3.PublicKey(userData.explorerAccount),
     explorerEscrowAccount: new anchor.web3.PublicKey(
       userData.explorerEscrowAccount
@@ -312,6 +317,7 @@ export const doFetchVrfAndProcessHunt = async ({
   program,
   stateAccount,
   vrfAccount,
+  historyAccount,
   programUstAccount,
 }) => {
   await doFetchVrf({
@@ -324,6 +330,7 @@ export const doFetchVrfAndProcessHunt = async ({
     program,
     stateAccount: stateAccount,
     vrfAccount: vrfAccount,
+    historyAccount,
     programUstAccount: programUstAccount,
   });
 };
@@ -349,12 +356,14 @@ export const doProcessHunt = async ({
   program,
   stateAccount,
   vrfAccount,
+  historyAccount,
   programUstAccount,
 }) => {
   await program.rpc.processHunt({
     accounts: {
       stateAccount: stateAccount,
       vrfAccount: vrfAccount,
+      historyAccount: historyAccount,
       programUstAccount: programUstAccount,
       systemProgram: anchor.web3.SystemProgram.programId,
       clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
@@ -384,6 +393,7 @@ export const doEnterHunt = async (
 
   await program.rpc.enterHunt(
     fakeUser.explorerEscrowAccountBump,
+    fakeUser.explorerId, // TODO real explorer ID
     providingPotion,
     gearToProvide,
     potionToProvide,
@@ -422,6 +432,7 @@ export const doChecksAndClaimHunt = async (
     x.explorerEscrowAccount.equals(fakeUser.explorerEscrowAccount)
   );
   const {
+    explorerId,
     providedGearMintId,
     providedPotionMintId,
     combatRewardMintId,
@@ -452,17 +463,18 @@ export const doChecksAndClaimHunt = async (
     expectedAccountHoldings[providedPotionMintId] += 1;
   }
   if (doLog) {
-    console.log(
-      `Combat - User #${id || 0}; Provided gear: ${
-        TREASURE_NAMES[providedGearMintId]
-      }; Found treasure: ${foundTreasure}; Treasure: ${
-        TREASURE_NAMES[treasureMintId]
-      }; Won combat: ${wonCombat}; Won gear: ${wonCombatGear}; combatReward: ${
-        TREASURE_NAMES[combatRewardMintId]
-      } potionProvided: ${
-        providedPotion ? TREASURE_NAMES[providedPotionMintId] : "None"
-      } potionUsed: ${usedPotion};`
-    );
+    console.log(enteredExplorer);
+    // console.log(
+    //   `Combat - User #${explorerId || 0}; Provided gear: ${
+    //     TREASURE_NAMES[providedGearMintId]
+    //   }; Found treasure: ${foundTreasure}; Treasure: ${
+    //     TREASURE_NAMES[treasureMintId]
+    //   }; Won combat: ${wonCombat}; Won gear: ${wonCombatGear}; combatReward: ${
+    //     TREASURE_NAMES[combatRewardMintId]
+    //   } potionProvided: ${
+    //     providedPotion ? TREASURE_NAMES[providedPotionMintId] : "None"
+    //   } potionUsed: ${usedPotion};`
+    // );
   }
   if (results != null) {
     results.totalProcessed += 1;
@@ -594,6 +606,7 @@ export const runUserGroupTest = async ({
   mintAuth,
   stateAccount,
   vrfAccount,
+  historyAccount,
   programUstAccount,
   fs,
   results,
@@ -625,6 +638,7 @@ export const runUserGroupTest = async ({
   await doFetchVrfAndProcessHunt({
     program,
     stateAccount,
+    historyAccount,
     vrfAccount,
     programUstAccount,
   });

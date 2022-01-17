@@ -62,6 +62,11 @@
     "@types/yargs" "^16.0.0"
     "chalk" "^4.0.0"
 
+"@project-serum/anchor-cli@^0.20.1":
+  "integrity" "sha512-4v7RTIHl2DqBQN/MgDHsxOiZl1iwqakY5elVgrtdfoIh+lSKIiZanXaB2my0sU6tPUI++FqFnpziZnJxj3IV/Q=="
+  "resolved" "https://registry.npmjs.org/@project-serum/anchor-cli/-/anchor-cli-0.20.1.tgz"
+  "version" "0.20.1"
+
 "@project-serum/anchor@^0.11.1":
   "integrity" "sha512-oIdm4vTJkUy6GmE6JgqDAuQPKI7XM4TPJkjtoIzp69RZe0iAD9JP2XHx7lV1jLdYXeYHqDXfBt3zcq7W91K6PA=="
   "resolved" "https://registry.npmjs.org/@project-serum/anchor/-/anchor-0.11.1.tgz"
@@ -82,10 +87,10 @@
     "snake-case" "^3.0.4"
     "toml" "^3.0.0"
 
-"@project-serum/anchor@^0.19.0":
-  "integrity" "sha512-cs0LBmJOrL9eJ8MRNqitnzbpCT5QEzVdJmiIjfNV5YaGn1K9vISR7DtISj3Bdl3KBdLqii4CTw1mpHdi8iXUCg=="
-  "resolved" "https://registry.npmjs.org/@project-serum/anchor/-/anchor-0.19.0.tgz"
-  "version" "0.19.0"
+"@project-serum/anchor@^0.20.1":
+  "integrity" "sha512-2TuBmGUn9qeYz6sJINJlElrBuPsaUAtYyUsJ3XplEBf1pczrANAgs5ceJUFzdiqGEWLn+84ObSdBeChT/AXYFA=="
+  "resolved" "https://registry.npmjs.org/@project-serum/anchor/-/anchor-0.20.1.tgz"
+  "version" "0.20.1"
   dependencies:
     "@project-serum/borsh" "^0.2.2"
     "@solana/web3.js" "^1.17.0"

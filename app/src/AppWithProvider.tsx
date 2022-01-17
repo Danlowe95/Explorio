@@ -10,7 +10,6 @@ import {
   WalletModalProvider,
   WalletMultiButton,
 } from "@solana/wallet-adapter-react-ui";
-import { createCounter, increment } from "./solana/counter";
 
 require("@solana/wallet-adapter-react-ui/styles.css");
 const wallets = [
@@ -38,30 +37,7 @@ function AppProvider() {
   } else {
     return (
       <div className="App">
-        <div>
-          {!value && (
-            <button
-              onClick={() =>
-                createCounter(wallet).then((resl) => setValue(resl))
-              }
-            >
-              Create counter
-            </button>
-          )}
-          {value && (
-            <button
-              onClick={() => increment(wallet).then((resl) => setValue(resl))}
-            >
-              Increment counter
-            </button>
-          )}
-
-          {value && value >= Number(0) ? (
-            <h2>{value}</h2>
-          ) : (
-            <h3>Please create the counter.</h3>
-          )}
-        </div>
+        <div>sdfs</div>
       </div>
     );
   }

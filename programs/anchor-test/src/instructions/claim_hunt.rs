@@ -100,13 +100,14 @@ pub struct ClaimHunt<'info> {
         let explorer_escrow_account = &mut ctx.accounts.explorer_escrow_account;
         // position returns the index
         // TODO improve this search to be secure
+        // TODO lot of pubkey comparisons. Consider implementing using unique explorer IDs and checking that first
         let relevent_arr_index = state_account.hunt_state_arr.iter().position(|x| {
-            return !x.is_empty && x.explorer_escrow_account == explorer_escrow_account.key()
+            return x.is_empty == crate::FALSE && x.explorer_escrow_account == explorer_escrow_account.key()
         }).unwrap();
 
         let entered_explorer_data = &state_account.hunt_state_arr[relevent_arr_index];
 
-        if entered_explorer_data.has_hunted == false {
+        if entered_explorer_data.has_hunted == crate::FALSE {
             return Err(crate::ErrorCode::HasNotHunted.into());
         }
         if entered_explorer_data.explorer_escrow_bump != explorer_escrow_bump {
@@ -131,7 +132,7 @@ pub struct ClaimHunt<'info> {
 
         let mut provided_potion_triple: Option<&crate::MintInfo> = None;
         // Confirm that the provided_potion_mint is a valid potion mint, and that it matches the provided_potion_mint_id in state
-        if entered_explorer_data.provided_potion {
+        if entered_explorer_data.provided_potion == crate::TRUE {
             for entry in crate::MINTS.iter() {
                 if entry.id == entered_explorer_data.provided_potion_mint_id &&
                     entry.mint_type == crate::POTION_TYPE && 
@@ -152,7 +153,7 @@ pub struct ClaimHunt<'info> {
         let mut combat_reward_triple: Option<&crate::MintInfo> = None; // TODO TEMP
 
         // Confirm that the combat_reward_mint is a valid gear mint, and that it matches the state
-        if entered_explorer_data.won_combat_gear {
+        if entered_explorer_data.won_combat_gear == crate::TRUE {
             for entry in crate::MINTS.iter() {
                 if  entry.id == entered_explorer_data.combat_reward_mint_id && 
                     entry.mint_type == crate::GEAR_TYPE && 
@@ -170,7 +171,7 @@ pub struct ClaimHunt<'info> {
         
         let mut treasure_reward_triple: Option<&crate::MintInfo> = None;
         // Confirm that the treasure_mint_id is a valid mint, and that it matches the state
-        if entered_explorer_data.found_treasure {
+        if entered_explorer_data.found_treasure == crate::TRUE {
             for entry in crate::MINTS.iter() {
                 if entry.id == entered_explorer_data.treasure_mint_id && 
                 entry.mint == &ctx.accounts.treasure_mint.key().to_string() 
@@ -233,8 +234,8 @@ pub struct ClaimHunt<'info> {
                 &[entered_explorer_data.explorer_escrow_bump],
             ]],
         ))?;
-        if entered_explorer_data.provided_potion {
-            if entered_explorer_data.used_potion {
+        if entered_explorer_data.provided_potion == crate::TRUE {
+            if entered_explorer_data.used_potion == crate::TRUE {
                 // No outcome
             } else {
                 // Mint the user's potion back to their assoc. account.
@@ -262,7 +263,7 @@ pub struct ClaimHunt<'info> {
             }
         }
 
-        if entered_explorer_data.provided_gear_kept {
+        if entered_explorer_data.provided_gear_kept == crate::TRUE {
             // Transfer the user's original gear back to their associated account
             anchor_spl::token::mint_to(
                 CpiContext::new_with_signer(
@@ -289,7 +290,7 @@ pub struct ClaimHunt<'info> {
                 1,
             )?;
         }
-        if entered_explorer_data.won_combat_gear {
+        if entered_explorer_data.won_combat_gear == crate::TRUE {
             // Transfer the user's won gear to their new associated account
             anchor_spl::token::mint_to(
                 CpiContext::new_with_signer(
@@ -316,7 +317,7 @@ pub struct ClaimHunt<'info> {
                 1,
             )?;
         }
-        if entered_explorer_data.found_treasure {
+        if entered_explorer_data.found_treasure == crate::TRUE {
             // TODO If they found grail it has to be unique mint code here
                 // Also do special logic if grail using entered_explorer_data.grail_reward_in_ust
 
@@ -352,27 +353,27 @@ pub struct ClaimHunt<'info> {
         // set it to a mostly-null struct with `is_empty: true`. Hopefully this can be improved in the future.
         // https://github.com/project-serum/anchor/issues/1241
         state_account.hunt_state_arr[relevent_arr_index] = EnteredExplorer {
-            is_empty: true,
+            is_empty: crate::TRUE,
             // this feels sketchy but I can't think of a way it can be abused currently.
             // need to provide _some_ publickey. could make it the program's key. Or a burn key.
             explorer_escrow_account: *ctx.program_id,
+            explorer_id: 0,
             provided_gear_mint_id: 0,
             provided_potion_mint_id: 0,
             explorer_escrow_bump: 0,
-            has_hunted: false,
-            provided_potion: false,
-            provided_gear_kept: false,
-            won_combat: false,
-            won_combat_gear: false,
+            has_hunted: crate::FALSE,
+            provided_potion: crate::FALSE,
+            provided_gear_kept: crate::FALSE,
+            won_combat: crate::FALSE,
+            won_combat_gear: crate::FALSE,
             combat_reward_mint_id: 0,
-            found_treasure: false,
-            used_potion: false,
-            treasure_mint_id: 0,
-            // grail_reward_in_ust: 0,
-    
+            found_treasure: crate::FALSE,
+            used_potion: crate::FALSE,
+            treasure_mint_id: 0,    
+            unused_value: 0,
+
+            // fake_field: crate::FALSE,
         };
 
-        // todo confirm we're closing all necessary accounts single escrow account.
-        
         Ok(())
     }

@@ -2,12 +2,13 @@ use anchor_lang::prelude::*;
 
 use crate::state::{HuntState, EnteredExplorer};
 use anchor_spl::token::{Mint, Token, TokenAccount};
-
+use crate::explorers::{EXPLORERS};
 
 
 #[derive(Accounts)]
 #[instruction(
     explorer_token_bump: u8, 
+    explorer_id: u16,
     provided_potion: bool,
     provided_gear_id: u8,
     provided_potion_id: u8,
@@ -81,11 +82,19 @@ pub struct EnterHunt<'info> {
     pub fn handler(
         ctx: Context<EnterHunt>,
         explorer_token_bump: u8,
+        explorer_id: u16,
         provided_potion: bool,
         provided_gear_id: u8,
         provided_potion_id: u8,
     ) -> ProgramResult {
         let mut state_account = ctx.accounts.state_account.load_mut()?;
+
+        // TODO when we get real explorer mints, enable this
+        // let explorer: &ExplorerInfo = &EXPLORERS[0];
+        let explorer = EXPLORERS.iter().find(|x| x.id == explorer_id).unwrap();
+        // if &explorer_mint.key().to_string() != explorer.mint {
+        //     return Err(crate::ErrorCode::BadMintProvided.into());
+        // }
 
         // Verify provided gear/potion accounts are valid mints for their roles
         let mut gear_triple: Option<&crate::MintInfo> = None;
@@ -171,7 +180,7 @@ pub struct EnterHunt<'info> {
         }
 
 
-        if state_account.hunt_state_arr.iter().all(|x| !x.is_empty) {
+        if state_account.hunt_state_arr.iter().all(|x| x.is_empty == crate::FALSE) {
             return Err(crate::ErrorCode::StateArrFull.into());
         }
 
@@ -211,36 +220,29 @@ pub struct EnterHunt<'info> {
          * 
          * */
 
-        let open_index = state_account.hunt_state_arr.iter().position(|x| x.is_empty).unwrap();
-        // let clock = &ctx.accounts.clock;
-        // msg!("clock {:#?} ", clock.unix_timestamp);
-        // msg!("arr len {:#?} ", state_account.hunt_state_arr.len());
-        // // let hash = ctx.accounts.slot_hashes.get(&0).unwrap();
-        // // msg!("hash: {}", hash.to_string());
-        // let swap_index: usize = (clock.unix_timestamp % (state_account.hunt_state_arr.len() - 1) as i64) as usize;
-        // msg!("swap_index {:#?} ", swap_index);
-        // // Set all necessary data in the hunt state 
-        // state_account.hunt_state_arr[open_index] = state_account.hunt_state_arr[swap_index];
-        // state_account.hunt_state_arr[swap_index] = EnteredExplorer {
+        let open_index = state_account.hunt_state_arr.iter().position(|x| x.is_empty == crate::TRUE).unwrap();
+
         state_account.hunt_state_arr[open_index] = EnteredExplorer {
-            is_empty: false,
+            is_empty: crate::FALSE,
             explorer_escrow_account: ctx.accounts.explorer_escrow_account.key(),
+            explorer_id: explorer_id, // todo id from explorer struct, not passed in
             provided_gear_mint_id: gear_triple.unwrap().id,
             provided_potion_mint_id: potion_triple.unwrap().id,
             explorer_escrow_bump: explorer_token_bump,
-            has_hunted: false,
-            provided_potion: provided_potion,
-            provided_gear_kept: false,
-            won_combat: false,
-            won_combat_gear: false,
+            has_hunted: crate::FALSE,
+            provided_potion: if provided_potion { crate::TRUE } else { crate::FALSE },
+            provided_gear_kept: crate::FALSE,
+            won_combat: crate::FALSE,
+            won_combat_gear: crate::FALSE,
             combat_reward_mint_id: 0,
           
-            found_treasure: false,
-            used_potion: false,
+            found_treasure: crate::FALSE,
+            used_potion: crate::FALSE,
             treasure_mint_id: 0,
-            // grail_reward_in_ust: 0,
+            unused_value: 0,
+
+            // fake_field: crate::FALSE
         };
 
-        // msg!("{}", state_account.hunt_state_arr[open_index].provided_gear_mint_id);
         Ok(())
     }
