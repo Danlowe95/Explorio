@@ -14,6 +14,7 @@ import {
   HUNT_ACCOUNT_SIZE,
   VRF_ACCOUNT_SIZE,
   HISTORY_ACCOUNT_SIZE,
+  GEARDROP_ACCOUNT_SIZE,
 } from "./consts";
 
 import {
@@ -39,7 +40,9 @@ const USER_ACCOUNTS_FILE = `./local/initialized_accounts.json`;
 let initializedData: {
   stateAccount: anchor.web3.PublicKey | null;
   vrfAccount: anchor.web3.PublicKey | null;
+  switchboardVrfAccount: anchor.web3.PublicKey | null;
   historyAccount: anchor.web3.PublicKey | null;
+  geardropAccount: anchor.web3.PublicKey | null;
   explorerMint: spl.Token | null;
   ustMint: spl.Token | null;
 };
@@ -64,14 +67,19 @@ describe("50-user-repeated", () => {
   let explorerMint: spl.Token;
   let mintAuth: anchor.web3.PublicKey;
   let mintAuthBump: number;
+  let geardropStateAccount: anchor.web3.PublicKey;
+  let geardropStateAccountBump: number;
   // TODO don't require copy/paste of this
 
   let userGroup: FakeUser[] = [];
   let programUstAccount: anchor.web3.PublicKey;
   let programUstAccountBump: number;
+  let switchboardVrfAccount: anchor.web3.PublicKey;
+  let switchboardVrfAccountBump: number;
   let stateAccount: anchor.web3.PublicKey;
   let vrfAccount: anchor.web3.PublicKey;
   let historyAccount: anchor.web3.PublicKey;
+  let geardropAccount: anchor.web3.PublicKey;
   // Experimental
   let mintMap: MintMap = {};
   let firstRun = true;
@@ -79,9 +87,13 @@ describe("50-user-repeated", () => {
   before(async () => {
     wallet = program.provider.wallet as NodeWallet;
 
-    const [mintAuthorityPda, mintAuthorityPdaBump] =
+    [mintAuth, mintAuthBump] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from(anchor.utils.bytes.utf8.encode("mint_auth"))],
+      program.programId
+    );
+    [geardropStateAccount, geardropStateAccountBump] =
       await anchor.web3.PublicKey.findProgramAddress(
-        [Buffer.from(anchor.utils.bytes.utf8.encode("mint_auth"))],
+        [Buffer.from(anchor.utils.bytes.utf8.encode("geardrop"))],
         program.programId
       );
     [programUstAccount, programUstAccountBump] =
@@ -89,9 +101,11 @@ describe("50-user-repeated", () => {
         [Buffer.from(anchor.utils.bytes.utf8.encode("fund"))],
         program.programId
       );
-
-    mintAuth = mintAuthorityPda;
-    mintAuthBump = mintAuthorityPdaBump;
+    [switchboardVrfAccount, switchboardVrfAccountBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [Buffer.from(anchor.utils.bytes.utf8.encode("vrf_num"))],
+        program.programId
+      );
 
     // If file is initialized, it's expected to be a valid config.
     if (fs.existsSync(DATA_FILE)) {
@@ -100,7 +114,11 @@ describe("50-user-repeated", () => {
       initializedData = {
         stateAccount: new anchor.web3.PublicKey(parsedData.stateAccount),
         vrfAccount: new anchor.web3.PublicKey(parsedData.vrfAccount),
+        switchboardVrfAccount: new anchor.web3.PublicKey(
+          parsedData.switchboardVrfAccount
+        ),
         historyAccount: new anchor.web3.PublicKey(parsedData.historyAccount),
+        geardropAccount: new anchor.web3.PublicKey(parsedData.geardropAccount),
         explorerMint: new spl.Token(
           program.provider.connection,
           new anchor.web3.PublicKey(parsedData.explorerMint),
@@ -120,7 +138,9 @@ describe("50-user-repeated", () => {
       ustMint = initializedData.ustMint;
       stateAccount = initializedData.stateAccount;
       vrfAccount = initializedData.vrfAccount;
+      switchboardVrfAccount = initializedData.switchboardVrfAccount;
       historyAccount = initializedData.historyAccount;
+      geardropAccount = initializedData.geardropAccount;
     }
 
     firstRun = stateAccount == null;
@@ -174,14 +194,17 @@ describe("50-user-repeated", () => {
       const stateAccountKeypair = anchor.web3.Keypair.generate();
       const vrfAccountKeypair = anchor.web3.Keypair.generate();
       const historyAccountKeypair = anchor.web3.Keypair.generate();
+      const geardropAccountKeypair = anchor.web3.Keypair.generate();
 
       stateAccount = stateAccountKeypair.publicKey;
       vrfAccount = vrfAccountKeypair.publicKey;
       historyAccount = historyAccountKeypair.publicKey;
+      geardropAccount = geardropAccountKeypair.publicKey;
       console.log("State account key (for saving): " + stateAccount);
       console.log("VRF account key (for saving): " + vrfAccount);
       console.log("History account key (for saving): " + historyAccount);
       console.log("Explorer mint key (for saving): " + explorerMint.publicKey);
+      console.log("Geardrop account key (for saving): " + geardropAccount);
       console.log("UST mint key (for saving): " + ustMint.publicKey);
       // Write these two accounts so they can be referenced later
       fs.writeFileSync(
@@ -189,44 +212,58 @@ describe("50-user-repeated", () => {
         JSON.stringify({
           stateAccount: stateAccount.toString(),
           vrfAccount: vrfAccount.toString(),
+          switchboardVrfAccount: switchboardVrfAccount.toString(),
           historyAccount: historyAccount.toString(),
+          geardropAccount: geardropAccount.toString(),
           explorerMint: explorerMint.publicKey.toString(),
           ustMint: ustMint.publicKey.toString(),
         })
       );
-      await program.rpc.initializeProgram(programUstAccountBump, mintAuthBump, {
-        accounts: {
-          owner: provider.wallet.publicKey,
-          stateAccount: stateAccountKeypair.publicKey,
-          vrfAccount: vrfAccountKeypair.publicKey,
-          historyAccount: historyAccountKeypair.publicKey,
-          programUstAccount: programUstAccount,
-          ustMint: ustMint.publicKey,
-          tokenProgram: spl.TOKEN_PROGRAM_ID,
-          associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        },
-        signers: [
-          stateAccountKeypair,
-          vrfAccountKeypair,
-          historyAccountKeypair,
-        ],
-        instructions: [
-          await program.account.huntState.createInstruction(
+      await program.rpc.initializeProgram(
+        programUstAccountBump,
+        mintAuthBump,
+        switchboardVrfAccountBump,
+        {
+          accounts: {
+            owner: provider.wallet.publicKey,
+            stateAccount: stateAccountKeypair.publicKey,
+            vrfAccount: vrfAccountKeypair.publicKey,
+            historyAccount: historyAccountKeypair.publicKey,
+            switchboardVrfAccount: switchboardVrfAccount,
+            geardropStateAccount: geardropAccountKeypair.publicKey,
+            programUstAccount: programUstAccount,
+            ustMint: ustMint.publicKey,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          },
+          signers: [
             stateAccountKeypair,
-            HUNT_ACCOUNT_SIZE
-          ),
-          await program.account.vrfState.createInstruction(
             vrfAccountKeypair,
-            VRF_ACCOUNT_SIZE
-          ),
-          await program.account.historyState.createInstruction(
             historyAccountKeypair,
-            HISTORY_ACCOUNT_SIZE
-          ),
-        ],
-      });
+            geardropAccountKeypair,
+          ],
+          instructions: [
+            await program.account.huntState.createInstruction(
+              stateAccountKeypair,
+              HUNT_ACCOUNT_SIZE
+            ),
+            await program.account.vrfState.createInstruction(
+              vrfAccountKeypair,
+              VRF_ACCOUNT_SIZE
+            ),
+            await program.account.historyState.createInstruction(
+              historyAccountKeypair,
+              HISTORY_ACCOUNT_SIZE
+            ),
+            await program.account.geardropState.createInstruction(
+              geardropAccountKeypair,
+              GEARDROP_ACCOUNT_SIZE
+            ),
+          ],
+        }
+      );
     }
 
     // Fetch state after initialization.
@@ -296,7 +333,7 @@ describe("50-user-repeated", () => {
 
     // logAccountState(userGroup);
 
-    while (runNumber < 50) {
+    while (runNumber < 20) {
       await airdropUserGroupIfNeeded(
         program,
         userGroup,
@@ -313,6 +350,7 @@ describe("50-user-repeated", () => {
         mintAuth,
         stateAccount,
         vrfAccount,
+        switchboardVrfAccount,
         programUstAccount,
         fs,
         results,

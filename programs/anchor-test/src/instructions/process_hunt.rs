@@ -98,12 +98,6 @@ pub struct ProcessHunt<'info> {
     // TODO will need to store in state UST value outstanding while waiting for user to claim
     pub program_ust_account: Account<'info, TokenAccount>,
 
-    // Eventually
-    // #[account(
-    //     mut
-    // )]
-    // pub history_account: Account<'info, HuntHistory>,
-
     // pub ust_mint: Account<'info, Mint>,
 
     // pub token_program: Program<'info, Token>,
@@ -452,8 +446,8 @@ pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
     // Do a shuffle of the array slots using randomness. OR implement array shuffle as separate instruction
     // TODO
 
-    // Grab an iter of all of the actual explorers entered (minus empty slots)
-    let mut all_entered = state_account.hunt_state_arr.iter_mut().filter(|x| x.is_empty == crate::FALSE);
+    // Grab an iter of all of the actual explorers entered who are eligible to hunt. Should cap at 1000.
+    let mut all_entered = state_account.hunt_state_arr.iter_mut().filter(|x| x.is_empty == crate::FALSE && x.has_hunted == crate::FALSE);
     // Grab an iter of all of the computed 'results'
     let mut vrf_entries = vrf_account.vrf_arr.iter();
     
@@ -493,7 +487,6 @@ pub fn handler(ctx: Context<ProcessHunt>) -> ProgramResult {
     }
 
     // TODO timestamp in state so this only runs once per 3 hours
-    // TODO implement history
     history_account.total_hunts = history_account.total_hunts.checked_add(1).unwrap();
     increment_hunt_id(history_account);
     Ok(())

@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::state::{HuntState, EnteredExplorer};
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use crate::explorers::{EXPLORERS};
+use crate::explorers::EXPLORERS;
 
 
 #[derive(Accounts)]
@@ -58,10 +58,9 @@ pub struct EnterHunt<'info> {
     // #[account(mut, constraint = provided_potion_pda.mint == provided_potion_mint)]
     #[account(mut)]
     pub provided_potion_mint: Box<Account<'info, Mint>>,
-    // Start - The 3 mints for deposits
+
     pub explorer_mint: Box<Account<'info, Mint>>,
 
-    // pub provided_potion_mint: Box<Account<'info, Mint>>,
 
     #[account(mut)]
     pub state_account: AccountLoader<'info, HuntState>,
@@ -90,7 +89,6 @@ pub struct EnterHunt<'info> {
         let mut state_account = ctx.accounts.state_account.load_mut()?;
 
         // TODO when we get real explorer mints, enable this
-        // let explorer: &ExplorerInfo = &EXPLORERS[0];
         let explorer = EXPLORERS.iter().find(|x| x.id == explorer_id).unwrap();
         // if &explorer_mint.key().to_string() != explorer.mint {
         //     return Err(crate::ErrorCode::BadMintProvided.into());
@@ -179,53 +177,20 @@ pub struct EnterHunt<'info> {
             )?;
         }
 
-
+        // Disallow entry of more than 1000 active explorers at a time
+        if state_account.hunt_state_arr.iter().filter(|x| x.is_empty == crate::FALSE && x.has_hunted == crate::FALSE).count() >= 1000 {
+            return Err(crate::ErrorCode::StateArrCapped.into());
+        }
         if state_account.hunt_state_arr.iter().all(|x| x.is_empty == crate::FALSE) {
             return Err(crate::ErrorCode::StateArrFull.into());
         }
-
-        /* 
-         * Insertion: What would be best, vs what we actually do
-         * 
-         * TL;DR: We need Chainlink VRF, anything else is subpar.
-         * 
-         * Problem: If users know where in the array their explorer will be inserted, they can theoretically game it so 
-         * they can fight an opponent of their choosing. This gives advantage to a user who monitors the state_account and 
-         * only sends the enter_hunt instruction when they see a favorable slot (i.e. one next to a weak opponent).
-         * 
-         * By adding randomness to _where_ a user's explorer is inserted, and not allowing the user to modify until the hunt
-         * takes place, we can make sure opponent matchups are fair.
-         * 
-         * If I could fetch a random number between 0-4999:
-         * I could fetch an open index, fetch a random index, move whatever is at the random index to the open index, and 
-         * insert the new explorer at the random index.
-         * 
-         * This would create a system in which the user can't know where in the array they will get inserted - and 
-         * prevent users from being able to "Game" the system to be matched against a specific opponent (e.g. a weak opponent)
-         * 
-         * However, I have no access to true randomization. If I can leverage Chainlink oracles, I could potentially query for 
-         * a random int 0-4999 and use that as the random index.
-         * 
-         * Since I don't have that ability, I am using 'clock' to derive an int in the range of 0-4999, labeling this the swap_index.
-         * The swap_index is then used as described above (move whatever is in swap_index to open_index, insert explorer at swap_index).
-         * 
-         * This does not really work well and is still gameable, but it at least adds some randomization to the array order.
-         * 
-         * This may be game-able, but should theoretically be harder since every insertion causes 
-         * another section of the array to be moved, it should make it hard for any user to pre-determine their combatant with
-         * any level of certainty.
-         * 
-         * This could theoretically be improved upon by rearranging even _more_ of the array on every enter_hunt.
-         * e.g. if we re-arrange 100 slots every time in a psuedo-random way, it could create too many variables to control.
-         * 
-         * */
 
         let open_index = state_account.hunt_state_arr.iter().position(|x| x.is_empty == crate::TRUE).unwrap();
 
         state_account.hunt_state_arr[open_index] = EnteredExplorer {
             is_empty: crate::FALSE,
             explorer_escrow_account: ctx.accounts.explorer_escrow_account.key(),
-            explorer_id: explorer_id, // todo id from explorer struct, not passed in
+            explorer_id: explorer_id,
             provided_gear_mint_id: gear_triple.unwrap().id,
             provided_potion_mint_id: potion_triple.unwrap().id,
             explorer_escrow_bump: explorer_token_bump,

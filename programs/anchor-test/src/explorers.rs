@@ -5,7 +5,6 @@ pub struct ExplorerInfo {
 }
 
 pub const EXPLORERS: [ExplorerInfo; 5000] = [
-    ExplorerInfo { id: 0, mint: "9E4DGvgyChjFaG8PUoznD3de7oGjP49PpM2bVpCkhDuw", ep: 1},
     ExplorerInfo { id: 1, mint: "9E4DGvgyChjFaG8PUoznD3de7oGjP49PpM2bVpCkhDuw", ep: 1},
     ExplorerInfo { id: 2, mint: "9E4DGvgyChjFaG8PUoznD3de7oGjP49PpM2bVpCkhDuw", ep: 1},
     ExplorerInfo { id: 3, mint: "9E4DGvgyChjFaG8PUoznD3de7oGjP49PpM2bVpCkhDuw", ep: 1},
@@ -5005,4 +5004,5 @@ pub const EXPLORERS: [ExplorerInfo; 5000] = [
     ExplorerInfo { id: 4997, mint: "9E4DGvgyChjFaG8PUoznD3de7oGjP49PpM2bVpCkhDuw", ep: 1},
     ExplorerInfo { id: 4998, mint: "9E4DGvgyChjFaG8PUoznD3de7oGjP49PpM2bVpCkhDuw", ep: 1},
     ExplorerInfo { id: 4999, mint: "9E4DGvgyChjFaG8PUoznD3de7oGjP49PpM2bVpCkhDuw", ep: 1},
+    ExplorerInfo { id: 5000, mint: "9E4DGvgyChjFaG8PUoznD3de7oGjP49PpM2bVpCkhDuw", ep: 1},
 ];

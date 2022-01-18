@@ -8,6 +8,7 @@ export const USER_ACCOUNTS_FILE = `./local/initialized_accounts.json`;
 export const HUNT_ACCOUNT_SIZE = 240044;
 export const VRF_ACCOUNT_SIZE = 20012;
 export const HISTORY_ACCOUNT_SIZE = 160176;
+export const GEARDROP_ACCOUNT_SIZE = 20008;
 
 export const USER_GROUP_SIZE = 25;
 

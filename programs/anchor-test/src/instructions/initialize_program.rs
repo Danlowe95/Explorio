@@ -1,12 +1,13 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount, Mint};
 use anchor_spl::associated_token::AssociatedToken;
-use crate::state::{HuntState, EnteredExplorer, VrfState, PerCombatRandomization, HistoryState, HistoryRow, MAX_HISTORY_ROWS};
+use crate::state::{HuntState, EnteredExplorer, VrfState, PerCombatRandomization, HistoryState, HistoryRow, MAX_HISTORY_ROWS, SwitchboardVrfAccount, GeardropState, IdAndNumber, get_initial_geardrop_state};
 
 #[derive(Accounts)]
 #[instruction(
     program_ust_account_bump: u8, 
     mint_auth_account_bump: u8,
+    vrf_num_bump: u8,
 )]
 pub struct InitializeProgram<'info> {
     #[account(mut, constraint = owner.key().to_string().as_str().eq(crate::OWNER_KEY))]
@@ -18,6 +19,16 @@ pub struct InitializeProgram<'info> {
     pub vrf_account: AccountLoader<'info, VrfState>,
     #[account(zero)]
     pub history_account: AccountLoader<'info, HistoryState>,
+    #[account(zero)]
+    pub geardrop_state_account: AccountLoader<'info, GeardropState>,
+    #[account(
+        init,
+        payer = owner,
+        space = 8 + 8,
+        seeds = [b"vrf_num"],
+        bump = vrf_num_bump,
+    )]
+    pub switchboard_vrf_account: Account<'info, SwitchboardVrfAccount>,
 
     #[account(
         init_if_needed, 
@@ -40,10 +51,12 @@ pub fn handler(
     ctx: Context<InitializeProgram>, 
     program_ust_account_bump: u8,
     mint_auth_account_bump: u8,
+    vrf_num_bump: u8,
 ) -> ProgramResult {
     let state_account = &mut ctx.accounts.state_account.load_init()?;
     let vrf_account = &mut ctx.accounts.vrf_account.load_init()?;
     let history_account = &mut ctx.accounts.history_account.load_init()?;
+    let geardrop_state_account = &mut ctx.accounts.geardrop_state_account.load_init()?;
 
     if state_account.is_initialized == crate::TRUE {
         return Err(crate::ErrorCode::AlreadyInitialized.into());
@@ -55,7 +68,8 @@ pub fn handler(
     state_account.is_initialized = crate::TRUE;
     state_account.mint_auth_account_bump = mint_auth_account_bump;
     state_account.program_ust_account_bump = program_ust_account_bump;
-
+    state_account.switchboard_account_bump = vrf_num_bump;
+    // todo is owner necessary here, since owner is being hardcoded?
     state_account.owner = ctx.accounts.owner.key();
     state_account.hunt_state_arr = [
             EnteredExplorer {
@@ -77,9 +91,11 @@ pub fn handler(
                 unused_value: 0,
         
             }; 5000];
-
+    ctx.accounts.switchboard_vrf_account.random_number = 0u64;
     vrf_account.is_initialized = crate::TRUE;
     vrf_account.is_usable = crate::FALSE;
+    vrf_account.request_waiting = crate::FALSE;
+    vrf_account.entries_shuffled = crate::FALSE;
     vrf_account.vrf_arr = [ PerCombatRandomization {winner_seed: 0, winner_gets_combat_reward_seed: 0, treasure_found_seed: 0, resilience_seed: 0,  swiftness_seed: 0} ; 2500];
 
     history_account.total_hunts = 0;
@@ -88,6 +104,14 @@ pub fn handler(
     history_account.total_per = [0; 17];
     history_account.write_ind = 0;
     history_account.history_arr =  [HistoryRow { hunt_id: 0, winner: 0, loser: 0, loser_gear: 0, winner_gear: 0, transfer: crate::FALSE, treasure_id: 0}; MAX_HISTORY_ROWS];
+    
+    
+    let mut ind = 0;
+    while ind != 5000 {
+        geardrop_state_account.geardrop_arr[ind] = IdAndNumber {explorer_id: (ind as u16+1u16 ), num_available: 0};
+        ind += 1;
+    }
+        // get_initial_geardrop_state();
 
     Ok(())
 }

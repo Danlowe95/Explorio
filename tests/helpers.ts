@@ -317,6 +317,7 @@ export const doFetchVrfAndProcessHunt = async ({
   program,
   stateAccount,
   vrfAccount,
+  switchboardVrfAccount,
   historyAccount,
   programUstAccount,
 }) => {
@@ -324,7 +325,7 @@ export const doFetchVrfAndProcessHunt = async ({
     program,
     stateAccount: stateAccount,
     vrfAccount: vrfAccount,
-    programUstAccount: programUstAccount,
+    switchboardVrfAccount: switchboardVrfAccount,
   });
   await doProcessHunt({
     program,
@@ -335,19 +336,36 @@ export const doFetchVrfAndProcessHunt = async ({
   });
 };
 
+// Do all required calls to request VRF and do pre-processing
 export const doFetchVrf = async ({
   program,
   stateAccount,
   vrfAccount,
-  programUstAccount,
+  switchboardVrfAccount,
 }) => {
-  await program.rpc.fetchVrf({
+  await program.rpc.requestVrf({
     accounts: {
       stateAccount: stateAccount,
       vrfAccount: vrfAccount,
-      programUstAccount: programUstAccount,
+      switchboardVrfAccount: switchboardVrfAccount,
       systemProgram: anchor.web3.SystemProgram.programId,
       clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+    },
+  });
+  await program.rpc.shuffleEntries({
+    accounts: {
+      stateAccount: stateAccount,
+      vrfAccount: vrfAccount,
+      switchboardVrfAccount: switchboardVrfAccount,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    },
+  });
+  await program.rpc.computeResults({
+    accounts: {
+      stateAccount: stateAccount,
+      vrfAccount: vrfAccount,
+      switchboardVrfAccount: switchboardVrfAccount,
+      systemProgram: anchor.web3.SystemProgram.programId,
     },
   });
 };
@@ -606,6 +624,7 @@ export const runUserGroupTest = async ({
   mintAuth,
   stateAccount,
   vrfAccount,
+  switchboardVrfAccount,
   historyAccount,
   programUstAccount,
   fs,
@@ -639,6 +658,7 @@ export const runUserGroupTest = async ({
     program,
     stateAccount,
     historyAccount,
+    switchboardVrfAccount,
     vrfAccount,
     programUstAccount,
   });

@@ -6,11 +6,13 @@ import idl from "./idl.json";
 import { AnchorTest } from "./anchor_test";
 
 const programData = {
-  stateAccount: "291iCq6ujVYxLsuJQuhejWn5vzWhXYWiyU1LaK3zvhvv",
-  vrfAccount: "Ht1SaU7oBcunP1caqaAxJ185dojGgLJ5s3KP1TTWQZeH",
-  historyAccount: "638yTfoLudbW5nKWQUdyUouENjWsw1kaWHDzTq98Yurp",
-  explorerMint: "4c81Zvg5XpvguFd2WNAjDuyxyQBkUFadiZ8gzyjVTUh3",
-  ustMint: "6W6JKZwM4f2uijaBvFNBYmt9JZmKHqY5Y1BU6hwEez2z",
+  stateAccount: "AtDsM1WPEWKHB9aTgmYcGeyNUV9pSVEksK9jQAoohjSw",
+  vrfAccount: "A47XULC78C6Mm8WXFU7piyn82mxZ1ofTmTWpL4G3U7gk",
+  switchboardVrfAccount: "DrCCUZEATPWLSREhoRKi1RFk1WUZ18Pp3FfGxNSpwTbC",
+  historyAccount: "BbygTLN1CsKHb4KMQCx8pizM76F3n64nZ6eeiysYJX3m",
+  geardropAccount: "51SaB3A1CNjQbh2nmSCF7L8nGr83Lg4rKPzA9Vbcdtpz",
+  explorerMint: "J1u8Hhe2R7Ja2n8NTmyjfcfkRLuumuW8EykGGhD61sjU",
+  ustMint: "81ijYYmfZNa7Sortr6MjbPdKfs5Q8ZJKRNbnqRPGQtYK",
 };
 
 const { SystemProgram, Keypair, SYSVAR_RENT_PUBKEY } = web3;

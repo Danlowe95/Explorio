@@ -55,6 +55,7 @@ const { mints } = env;
 let initializedData: {
   stateAccount: anchor.web3.PublicKey | null;
   vrfAccount: anchor.web3.PublicKey | null;
+  switchboardVrfAccount: anchor.web3.PublicKey | null;
   historyAccount: anchor.web3.PublicKey | null;
   explorerMint: spl.Token | null;
   ustMint: spl.Token | null;
@@ -88,6 +89,8 @@ describe("anchor-test", () => {
   let programUstAccountBump: number;
   let stateAccount: anchor.web3.PublicKey;
   let vrfAccount: anchor.web3.PublicKey;
+  let switchboardVrfAccount: anchor.web3.PublicKey;
+  let switchboardVrfAccountBump: number;
   let historyAccount: anchor.web3.PublicKey;
 
   // Experimental
@@ -107,7 +110,11 @@ describe("anchor-test", () => {
         [Buffer.from(anchor.utils.bytes.utf8.encode("fund"))],
         program.programId
       );
-
+    [switchboardVrfAccount, switchboardVrfAccountBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [Buffer.from(anchor.utils.bytes.utf8.encode("vrf_num"))],
+        program.programId
+      );
     mintAuth = mintAuthorityPda;
     mintAuthBump = mintAuthorityPdaBump;
 
@@ -118,6 +125,9 @@ describe("anchor-test", () => {
       initializedData = {
         stateAccount: new anchor.web3.PublicKey(parsedData.stateAccount),
         vrfAccount: new anchor.web3.PublicKey(parsedData.vrfAccount),
+        switchboardVrfAccount: new anchor.web3.PublicKey(
+          parsedData.switchboardVrfAccount
+        ),
         historyAccount: new anchor.web3.PublicKey(parsedData.historyAccount),
         explorerMint: new spl.Token(
           program.provider.connection,
@@ -138,6 +148,8 @@ describe("anchor-test", () => {
       ustMint = initializedData.ustMint;
       stateAccount = initializedData.stateAccount;
       vrfAccount = initializedData.vrfAccount;
+      switchboardVrfAccount = initializedData.switchboardVrfAccount;
+
       historyAccount = initializedData.historyAccount;
     }
 
@@ -211,39 +223,45 @@ describe("anchor-test", () => {
           ustMint: ustMint.publicKey.toString(),
         })
       );
-      await program.rpc.initializeProgram(programUstAccountBump, mintAuthBump, {
-        accounts: {
-          owner: provider.wallet.publicKey,
-          stateAccount: stateAccountKeypair.publicKey,
-          vrfAccount: vrfAccountKeypair.publicKey,
-          historyAccount: historyAccountKeypair.publicKey,
-          programUstAccount: programUstAccount,
-          ustMint: ustMint.publicKey,
-          tokenProgram: spl.TOKEN_PROGRAM_ID,
-          associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        },
-        signers: [
-          stateAccountKeypair,
-          vrfAccountKeypair,
-          historyAccountKeypair,
-        ],
-        instructions: [
-          await program.account.huntState.createInstruction(
+      await program.rpc.initializeProgram(
+        programUstAccountBump,
+        mintAuthBump,
+        switchboardVrfAccountBump,
+        {
+          accounts: {
+            owner: provider.wallet.publicKey,
+            stateAccount: stateAccountKeypair.publicKey,
+            vrfAccount: vrfAccountKeypair.publicKey,
+            switchboardVrfAccount: switchboardVrfAccount,
+            historyAccount: historyAccountKeypair.publicKey,
+            programUstAccount: programUstAccount,
+            ustMint: ustMint.publicKey,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          },
+          signers: [
             stateAccountKeypair,
-            HUNT_ACCOUNT_SIZE
-          ),
-          await program.account.vrfState.createInstruction(
             vrfAccountKeypair,
-            VRF_ACCOUNT_SIZE
-          ),
-          await program.account.historyState.createInstruction(
             historyAccountKeypair,
-            HISTORY_ACCOUNT_SIZE
-          ),
-        ],
-      });
+          ],
+          instructions: [
+            await program.account.huntState.createInstruction(
+              stateAccountKeypair,
+              HUNT_ACCOUNT_SIZE
+            ),
+            await program.account.vrfState.createInstruction(
+              vrfAccountKeypair,
+              VRF_ACCOUNT_SIZE
+            ),
+            await program.account.historyState.createInstruction(
+              historyAccountKeypair,
+              HISTORY_ACCOUNT_SIZE
+            ),
+          ],
+        }
+      );
     }
 
     // Fetch state after initialization.
@@ -441,6 +459,7 @@ describe("anchor-test", () => {
       stateAccount,
       programUstAccount,
       vrfAccount,
+      switchboardVrfAccount,
       historyAccount,
     });
 
@@ -489,7 +508,7 @@ describe("anchor-test", () => {
     await doFetchVrf({
       program,
       stateAccount,
-      programUstAccount,
+      switchboardVrfAccount,
       vrfAccount,
     });
     vrfState = await program.account.vrfState.fetch(vrfAccount);
@@ -500,12 +519,12 @@ describe("anchor-test", () => {
       await doFetchVrf({
         program,
         stateAccount,
-        programUstAccount,
+        switchboardVrfAccount,
         vrfAccount,
       });
       assert.ok(false);
     } catch (err) {
-      const errMsg = "Randomness has already been generated.";
+      const errMsg = "Randomness has already been requested.";
       assert.equal(errMsg, err.toString());
     }
     // Run another process to unlock VRF state. This should no-op since no explorers are entered.
@@ -531,6 +550,7 @@ describe("anchor-test", () => {
       mintAuth,
       stateAccount,
       vrfAccount,
+      switchboardVrfAccount,
       historyAccount,
       programUstAccount,
       fs,

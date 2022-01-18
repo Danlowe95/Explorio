@@ -90,12 +90,15 @@ const HuntPage = () => {
 
   const [history, setHistory] = React.useState<any>(null);
   React.useEffect(() => {
-    fetchHistoryState(wallet).then((history) => {
-      if (history != null) {
-        setHistory(history);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const fetch = async () => {
+      await fetchHistoryState(wallet).then((history) => {
+        if (history != null) {
+          setHistory(history);
+        }
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    };
+    fetch();
   }, []);
 
   return (

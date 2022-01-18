@@ -5,11 +5,12 @@ export const DATA_FILE = "./local/initialized_data.json";
 export const RESULTS_FILE = "./local/results.json";
 export const USER_ACCOUNTS_FILE = `./local/initialized_accounts.json`;
 
-export const HUNT_ACCOUNT_SIZE = 240044;
+export const HUNT_ACCOUNT_SIZE = 240046;
 export const VRF_ACCOUNT_SIZE = 20012;
 export const HISTORY_ACCOUNT_SIZE = 240176;
+export const GEARDROP_ACCOUNT_SIZE = 20008;
 
-export const USER_GROUP_SIZE = 250;
+export const USER_GROUP_SIZE = 50;
 
 export const NONE_ID = 0;
 export const SHORTSWORD_ID = 1;
