@@ -2,8 +2,18 @@ pub mod claim_hunt;
 pub mod enter_hunt;
 pub mod initialize_program;
 pub mod process_hunt;
+pub mod compute_results;
+pub mod request_vrf;
+pub mod shuffle_entries;
+pub mod airdrop_starter;
+pub mod claim_geardrop;
 
 pub use claim_hunt::*;
 pub use enter_hunt::*;
 pub use initialize_program::*;
 pub use process_hunt::*;
+pub use request_vrf::*;
+pub use shuffle_entries::*;
+pub use compute_results::*;
+pub use airdrop_starter::*;
+pub use claim_geardrop::*;

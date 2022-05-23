@@ -1,5 +1,5 @@
 [programs.localnet]
-anchor_test = "69v7eiACV758WzGopNQN8s5WRG5TcTSF4nexNP8F5p7d"
+anchor_test = "3cdx2BHuSCyyvLJt2ZhdcoPpSrMqzZHb2UPQD6f8tTUK"
 
 [registry]
 url = "https://anchor.projectserum.com"
@@ -9,4 +9,5 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+# test = "yarn run ts-mocha -p ./tsconfig.json -t 100000000 tests/anchor-test.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 100000000 tests/50-user-repeated.ts"
