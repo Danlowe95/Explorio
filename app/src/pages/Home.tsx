@@ -43,12 +43,12 @@ const App = () => {
           <Text mb={6}>
             Explorio NFTs are used by the Explorio protocol, which hosts a game
             in which players have the potential to win notable rewards,
-            including unique NFTs and UST.
+            including unique NFTs, fungible tokens, and USDC.
           </Text>
           <Text mb={tParaBottom}>
             Deployed on the Solana network, the Explorio protocol hosts a
             non-interactive game that is ever-running. The game is called <b>The
-            Hunt for the Holy Grail</b>, and an Explorer NFT, among others, are used to play.
+              Hunt for the Holy Grail</b>, and an Explorer NFT, among others, are used to play.
           </Text>
           <Text mb={tParaBottom}>
             {" "}
@@ -67,7 +67,7 @@ const App = () => {
           </Text>
           <Text mb={tParaBottom}>
             {" "}
-            All treasures found through playing the game are represented by NFTs. Most of these NFTs are only
+            All treasures found through playing the game are represented by tokens on the Solana blockchain - both fungible and non-fungible. Most of these tokens are only
             mintable by finding them in game. Once found, they are able to be traded
             with other players.
           </Text>
@@ -132,10 +132,10 @@ const App = () => {
               The reward for finding the Grail is some amount of{" "}
               <Link
                 color="green.400"
-                href="https://www.terra.money/"
+                href="https://www.circle.com/en/usdc"
                 isExternal
               >
-                UST (Terra USD)
+                USDC
               </Link>
               , which is paid out from the Grail Fund. The Grail Fund is a fund
               accessible only by the game protocol itself, and only in the event
@@ -152,19 +152,6 @@ const App = () => {
               marketplace after launch will be subject to a small fee, with a portion of
               those fees being split between the protocol, developer, and charity initiatives. As people play the game, the reward for
               finding the Holy Grail will continually increase!
-            </Text>
-            <Text>
-              Last but not least, the intention is for all of these funds to be
-              invested using{" "}
-              <Link
-                color="green.400"
-                href="https://anchorprotocol.com/"
-                isExternal
-              >
-                Anchor Protocol
-              </Link>
-              , Terra Network's principle-protected savings protocol, where they
-              will safely accrue interest of up to 20% per year.
             </Text>
           </Flex>
         </Flex>
