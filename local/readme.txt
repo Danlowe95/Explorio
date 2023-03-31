@@ -4,7 +4,9 @@ solana-test-validator
 run:
 cd anchor-explorio
 # address of test wallet
-solana airdrop 100 EA7Cpq8hfUxpHAQaQ1xy3hKaqEUSwQxXQijpZY6ZmJrU
+
+## TODO what is EA7 linked to??
+solana airdrop 100 78aJYueV3cvCDJBZwSuqimnRBqAqihqSchxpmy4K6mXN
 bash local/generate_mints_config.sh
 node local/build_rust_crate.js
 # copy contents of rust_crate.txt into lib.rs file now
