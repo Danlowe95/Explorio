@@ -54,6 +54,77 @@
       "args": []
     },
     {
+      "name": "claimGeardrop",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userExplorerAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userShortswordAssociatedAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "shortswordMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "explorerMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "geardropState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "explorerId",
+          "type": "u16"
+        }
+      ]
+    },
+    {
       "name": "initializeProgram",
       "accounts": [
         {
@@ -73,6 +144,16 @@
         },
         {
           "name": "historyAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "geardropStateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "switchboardVrfAccount",
           "isMut": true,
           "isSigner": false
         },
@@ -115,11 +196,15 @@
         {
           "name": "mintAuthAccountBump",
           "type": "u8"
+        },
+        {
+          "name": "vrfNumBump",
+          "type": "u8"
         }
       ]
     },
     {
-      "name": "fetchVrf",
+      "name": "computeResults",
       "accounts": [
         {
           "name": "stateAccount",
@@ -132,12 +217,69 @@
           "isSigner": false
         },
         {
+          "name": "switchboardVrfAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "requestVrf",
+      "accounts": [
+        {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vrfAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "switchboardVrfAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
         },
         {
           "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "shuffleEntries",
+      "accounts": [
+        {
+          "name": "stateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vrfAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "switchboardVrfAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -400,7 +542,10 @@
           {
             "name": "totalPer",
             "type": {
-              "array": ["u64", 17]
+              "array": [
+                "u64",
+                17
+              ]
             }
           },
           {
@@ -421,6 +566,37 @@
                 20000
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GeardropState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "geardropArr",
+            "type": {
+              "array": [
+                {
+                  "defined": "IdAndNumber"
+                },
+                5000
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SwitchboardVrfAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "randomNumber",
+            "type": "u64"
           }
         ]
       }
@@ -447,6 +623,14 @@
           },
           {
             "name": "isUsable",
+            "type": "u8"
+          },
+          {
+            "name": "requestWaiting",
+            "type": "u8"
+          },
+          {
+            "name": "entriesShuffled",
             "type": "u8"
           }
         ]
@@ -482,6 +666,14 @@
           },
           {
             "name": "mintAuthAccountBump",
+            "type": "u8"
+          },
+          {
+            "name": "switchboardAccountBump",
+            "type": "u8"
+          },
+          {
+            "name": "geardropAccountBump",
             "type": "u8"
           },
           {
@@ -525,6 +717,22 @@
           {
             "name": "treasureId",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IdAndNumber",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "explorerId",
+            "type": "u16"
+          },
+          {
+            "name": "numAvailable",
+            "type": "u16"
           }
         ]
       }
@@ -680,9 +888,54 @@
       "code": 6009,
       "name": "RandomnessAlreadyGenerated",
       "msg": "Randomness has already been generated."
+    },
+    {
+      "code": 6010,
+      "name": "RandomnessAlreadyRequested",
+      "msg": "Randomness has already been requested."
+    },
+    {
+      "code": 6011,
+      "name": "RandomnessNotYetRequested",
+      "msg": "Randomness has not yet been requested."
+    },
+    {
+      "code": 6012,
+      "name": "RandomnessInUse",
+      "msg": "Randomness has been generated and not fully used."
+    },
+    {
+      "code": 6013,
+      "name": "EntriesAlreadyShuffled",
+      "msg": "Array shuffle has already taken place."
+    },
+    {
+      "code": 6014,
+      "name": "ExplorerNotOwned",
+      "msg": "The user does not currently own an explorer of the provided mint."
+    },
+    {
+      "code": 6015,
+      "name": "NoGearAvailable",
+      "msg": "This explorer has no gear available to claim."
+    },
+    {
+      "code": 6016,
+      "name": "StateArrCapped",
+      "msg": "The state array is full."
+    },
+    {
+      "code": 6017,
+      "name": "StateArrNotShuffled",
+      "msg": "The state array has not yet been shuffled."
+    },
+    {
+      "code": 6018,
+      "name": "VrfRequestNotYetUsed",
+      "msg": "A random number was requested but hasn't been utilized."
     }
   ],
   "metadata": {
-    "address": "3cdx2BHuSCyyvLJt2ZhdcoPpSrMqzZHb2UPQD6f8tTUK"
+    "address": "C6wNMRuGEpxhmVqg4gpk6rqxhYZyE66sQWW3d8BWNbMa"
   }
 }

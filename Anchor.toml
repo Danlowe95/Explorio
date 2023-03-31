@@ -1,5 +1,5 @@
 [programs.localnet]
-anchor_test = "3cdx2BHuSCyyvLJt2ZhdcoPpSrMqzZHb2UPQD6f8tTUK"
+anchor_test = "C6wNMRuGEpxhmVqg4gpk6rqxhYZyE66sQWW3d8BWNbMa"
 
 [registry]
 url = "https://anchor.projectserum.com"
