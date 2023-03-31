@@ -6,10 +6,10 @@ pub mod state;
 use instructions::*;
 // use explorers::*;
 
-declare_id!("C6wNMRuGEpxhmVqg4gpk6rqxhYZyE66sQWW3d8BWNbMa");
+declare_id!("3cdx2BHuSCyyvLJt2ZhdcoPpSrMqzZHb2UPQD6f8tTUK");
 
 // Declare Explorio protocol owner publicKey for reference during initialization.
-const OWNER_KEY: &str = r"78aJYueV3cvCDJBZwSuqimnRBqAqihqSchxpmy4K6mXN";
+const OWNER_KEY: &str = r"EA7Cpq8hfUxpHAQaQ1xy3hKaqEUSwQxXQijpZY6ZmJrU";
 
 struct MintInfo {
     id: u8,
@@ -50,22 +50,22 @@ const GRAIL_ID: u8 = 16;
 
 const MINTS: [MintInfo; 17] = [
     MintInfo{ id: 0, mint_type: NONE_TYPE, ep: 0, mint: "NONE"}, // none
-    MintInfo{ id: SHORTSWORD_ID, mint_type: GEAR_TYPE, ep: 1, mint: "BW6geWtvEAF3UH8CkJkh95NmPSTma2rvDwDaMeqzyV2K"}, // gear_1: shortsword
-    MintInfo{ id: LEATHER_ARMOR_ID, mint_type: GEAR_TYPE, ep: 1, mint: "4NVipBSR5mtH1YMX7uCaUxC3GUt329AZxdTTbNPBeC4z"}, // gear_2: leather_armor
-    MintInfo{ id: DAGGER_ID, mint_type: GEAR_TYPE, ep: 2, mint: "FzPPxhLjJXeGLgNM25vNGV6VbZ39C9hjwgMuMSyrQ3Zi"}, // gear_3: Dagger
-    MintInfo{ id: SHORTBOW_ID, mint_type: GEAR_TYPE, ep: 2, mint: "AMjpSrn9APySgzn38BzCBFqWVNHyz43aYx8aoqsgqbR1"}, // gear_4: Shortbow
-    MintInfo{ id: LONGSWORD_ID, mint_type: GEAR_TYPE, ep: 3, mint: "3wZ2STJUfZac8jY7VJb44aZ3LLnfjtdHqaPQ168M87k7"}, // gear_5: Longsword
-    MintInfo{ id: CHAINMAIL_ARMOR_ID, mint_type: GEAR_TYPE, ep: 3, mint: "F2RSUsnhzFuA5kzeyZma6uu9A1byu6qp72HhEf2L7dXJ"}, // gear_6: Chainmail_armor
-    MintInfo{ id: CROSSBOW_ID, mint_type: GEAR_TYPE, ep: 4, mint: "5Tma3vHRRH5QfQ2f3mQMzkqQD2WZaDNLbiBaBDyRWDFF"}, // gear_7: Crossbow
-    MintInfo{ id: PLATE_ARMOR_ID, mint_type: GEAR_TYPE, ep: 5, mint: "3Znxhg9txC17iWim3SjRKds6oMHHnehM6uwdfDoxfG23"}, // gear_8: Plate_armor
-    MintInfo{ id: CUTTHROATS_DAGGER_ID, mint_type: GEAR_TYPE, ep: 6, mint: "7K6pUPPBsNgge77HrehSgetNcJ4F8d9MiS5r2zeZWNrr"}, // gear_9: Cutthroats_dagger
-    MintInfo{ id: EXCALIBUR_ID, mint_type: GEAR_TYPE, ep: 6, mint: "FMQZqrBHrpeWmoGfqwN2DbFmDqcmpwH2D96t5Mc9kG4K"}, // gear_10: Excalibur
-    MintInfo{ id: TREASURE_SCROLL_ID, mint_type: GEAR_TYPE, ep: 0, mint: "FKoVQCyzCr1XeEocj8EkaTeHBsR8krTYWpKbxH8sD56A"}, // Gear_11: Treasure scroll
-    MintInfo{ id: POT_OF_SWIFTNESS_ID, mint_type: POTION_TYPE, ep: 0, mint: "ATZ9tzAe4hpFH1bq64RW8TWQYMPnDRys8NUuhiMSHw6j"}, // potion_1: swiftness
-    MintInfo{ id: POT_OF_STRENGTH_ID, mint_type: POTION_TYPE, ep: 2, mint: "85vhW3DupU6xgZoVu6SYQXafsh2YXz9tZMzs8vDAJ8Xt"}, // potion_2: strength
-    MintInfo{ id: POT_OF_MENDING_ID, mint_type: POTION_TYPE, ep: 0, mint: "F8XpvhpqEq6SAPhPy8YdddW8aYVtL1V3tuWrxTesaZgA"}, // potion_3: mending
-    MintInfo{ id: POT_OF_RESILIENCE_ID, mint_type: POTION_TYPE, ep: 0, mint: "EYLHqbAeABnDPqx9asaZf55y1ZYQ1s4jJFqinuLLxbpj"}, // potion_4: resilience
-    MintInfo{ id: GRAIL_ID, mint_type: GRAIL_TYPE, ep: 0, mint: "ADk9sxDC4Y3F2bbwyvYZpyHZr2kpgsNERZUKGeGBVhwQ"}, // grail    
+    MintInfo{ id: SHORTSWORD_ID, mint_type: GEAR_TYPE, ep: 1, mint: "HtMSpvxx2GVGUfwu3ER9Tki6JNioCWYeF6dzVf5hZa8B"}, // gear_1: shortsword
+    MintInfo{ id: LEATHER_ARMOR_ID, mint_type: GEAR_TYPE, ep: 1, mint: "BZ2rSq1dcWq5ffn9swqz9hDE5W6d5K7Qc3tMiZ7PJpcC"}, // gear_2: leather_armor
+    MintInfo{ id: DAGGER_ID, mint_type: GEAR_TYPE, ep: 2, mint: "G369guKYT61JJPWq2G3Pkp5yCpoAfZ1PmzEeJBWPThDW"}, // gear_3: Dagger
+    MintInfo{ id: SHORTBOW_ID, mint_type: GEAR_TYPE, ep: 2, mint: "EN3ZubuEr1GKoLx1JhwenC21L6fGHiXkj5N24TbZWUTe"}, // gear_4: Shortbow
+    MintInfo{ id: LONGSWORD_ID, mint_type: GEAR_TYPE, ep: 3, mint: "9gXKDygCWmBfkuGPaczoizABWNqMLWgp5aLkc1z1FbE1"}, // gear_5: Longsword
+    MintInfo{ id: CHAINMAIL_ARMOR_ID, mint_type: GEAR_TYPE, ep: 3, mint: "8sCDvuRoAS9aDmc6fVR9ZhCvk6LKbdpd2m3aa9y9eNGv"}, // gear_6: Chainmail_armor
+    MintInfo{ id: CROSSBOW_ID, mint_type: GEAR_TYPE, ep: 4, mint: "Dbpwcu2eeJrFmm5D2WuE3BYP9HvbxgRcbDrZVGG9RnMh"}, // gear_7: Crossbow
+    MintInfo{ id: PLATE_ARMOR_ID, mint_type: GEAR_TYPE, ep: 5, mint: "G99sqpaedL4SkKaTHjt6MYRCa88c5vCmQjNqKJmZjG1s"}, // gear_8: Plate_armor
+    MintInfo{ id: CUTTHROATS_DAGGER_ID, mint_type: GEAR_TYPE, ep: 6, mint: "4SFhr6TMYyAjFp7ATgCcn99s6NhVCJMLTwqBrUU88XEV"}, // gear_9: Cutthroats_dagger
+    MintInfo{ id: EXCALIBUR_ID, mint_type: GEAR_TYPE, ep: 6, mint: "6eQ8fFydkqiAvV2yivzH8GsGSvZzyCrHj1DuC934GksX"}, // gear_10: Excalibur
+    MintInfo{ id: TREASURE_SCROLL_ID, mint_type: GEAR_TYPE, ep: 0, mint: "8HKjCHHqKb7uvXH8EaiLpnGPu5EKYbXABhxaYXboTbwx"}, // Gear_11: Treasure scroll
+    MintInfo{ id: POT_OF_SWIFTNESS_ID, mint_type: POTION_TYPE, ep: 0, mint: "94Be6xQ8ocE7uoGg1YkmKqN8Mu2yqDnrhzWCR7Q92PVY"}, // potion_1: swiftness
+    MintInfo{ id: POT_OF_STRENGTH_ID, mint_type: POTION_TYPE, ep: 2, mint: "6vzpPsyXdsuuowg2wepn1WyCf5sFBWnz6YZ9ZHbrdFMs"}, // potion_2: strength
+    MintInfo{ id: POT_OF_MENDING_ID, mint_type: POTION_TYPE, ep: 0, mint: "2X4sD6WeRQPhoi8WnhB1qiF74UxNQrwhyrKmYzMz9w15"}, // potion_3: mending
+    MintInfo{ id: POT_OF_RESILIENCE_ID, mint_type: POTION_TYPE, ep: 0, mint: "2ssNaWPDfVuo3xKJntTU4pcmCPBs5Ar3vH3AtY6wcFL5"}, // potion_4: resilience
+    MintInfo{ id: GRAIL_ID, mint_type: GRAIL_TYPE, ep: 0, mint: "GaXrwHSowx2U9cz7NiRdGkjfnuoiPV5XU5oo8QcEmuep"}, // grail   
 ];
 struct MintAuth {
     seed: &'static [u8], 
