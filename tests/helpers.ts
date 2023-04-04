@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 
 import * as spl from "@solana/spl-token";
 import { AnchorTest } from "../target/types/anchor_test";
@@ -404,7 +404,7 @@ export const doEnterHunt = async (
   // a potion account always must be provided. TODO this will change once potions are optional
   const providedPotionAccount =
     fakeUser.userAssociatedAccountMintMap[
-      providingPotion ? potionToProvide : NONE_POTION_ID
+    providingPotion ? potionToProvide : NONE_POTION_ID
     ];
   const providedPotionMint =
     mintMap[providingPotion ? potionToProvide : NONE_POTION_ID];
@@ -524,25 +524,25 @@ export const doChecksAndClaimHunt = async (
 
   assert(
     fakeUser.accountHoldings[providedGearMintId] ===
-      expectedAccountHoldings[providedGearMintId]
+    expectedAccountHoldings[providedGearMintId]
   );
   if (providedPotion) {
     assert(
       fakeUser.accountHoldings[providedPotionMintId] ===
-        expectedAccountHoldings[providedPotionMintId]
+      expectedAccountHoldings[providedPotionMintId]
     );
   }
 
   if (wonCombatGear) {
     assert(
       fakeUser.accountHoldings[combatRewardMintId] ===
-        expectedAccountHoldings[combatRewardMintId]
+      expectedAccountHoldings[combatRewardMintId]
     );
   }
   if (foundTreasure) {
     assert(
       fakeUser.accountHoldings[treasureMintId] ===
-        expectedAccountHoldings[treasureMintId]
+      expectedAccountHoldings[treasureMintId]
     );
   }
 
@@ -578,7 +578,7 @@ export const doClaimHunt = async (
         fakeUser.userAssociatedAccountMintMap[providedGearMintId],
       userAssociatedPotionAccount:
         fakeUser.userAssociatedAccountMintMap[
-          providedPotionMintId != 0 ? providedPotionMintId : NONE_POTION_ID
+        providedPotionMintId != 0 ? providedPotionMintId : NONE_POTION_ID
         ],
       userAssociatedCombatRewardAccount:
         combatRewardMintId !== 0

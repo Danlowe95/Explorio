@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as spl from "@solana/spl-token";
 
 export const DATA_FILE = "./local/initialized_data.json";

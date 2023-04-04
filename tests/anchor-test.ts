@@ -1,5 +1,5 @@
-import * as anchor from "@project-serum/anchor";
-import { NodeWallet } from "@project-serum/anchor/dist/cjs/provider";
+import * as anchor from "@coral-xyz/anchor";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/provider";
 
 import * as spl from "@solana/spl-token";
 import assert = require("assert");
@@ -57,8 +57,8 @@ let initializedData: {
   vrfAccount: anchor.web3.PublicKey | null;
   switchboardVrfAccount: anchor.web3.PublicKey | null;
   historyAccount: anchor.web3.PublicKey | null;
-  explorerMint: spl.Token | null;
-  ustMint: spl.Token | null;
+  explorerMint: spl.Mint | null;
+  ustMint: spl.Mint | null;
 };
 
 let initializedUsers; // untyped, FakeUser[]-like
@@ -77,8 +77,8 @@ describe("anchor-test", () => {
   const program = anchor.workspace.AnchorTest as anchor.Program<AnchorTest>;
 
   let wallet: NodeWallet;
-  let ustMint: spl.Token;
-  let explorerMint: spl.Token;
+  let ustMint: spl.Mint;
+  let explorerMint: spl.Mint;
   let mintAuth: anchor.web3.PublicKey;
   let mintAuthBump: number;
   // TODO don't require copy/paste of this

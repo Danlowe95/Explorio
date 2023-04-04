@@ -6,7 +6,7 @@
     "@chakra-ui/icons": "^1.1.1",
     "@chakra-ui/react": "^1.7.3",
     "@fontsource/roboto": "^4.5.1",
-    "@project-serum/anchor": "^0.19.0",
+    "@coral-xyz/anchor": "^0.19.0",
     "@solana/wallet-adapter-base": "^0.7.1",
     "@solana/wallet-adapter-react": "^0.13.1",
     "@solana/wallet-adapter-react-ui": "^0.6.1",

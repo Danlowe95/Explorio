@@ -1,6 +1,6 @@
 import { Connection, PublicKey, Commitment } from "@solana/web3.js";
 import { WalletContextState } from "@solana/wallet-adapter-react";
-import { Program, Provider, web3 } from "@project-serum/anchor";
+import { Program, Provider, web3 } from "@coral-xyz/anchor";
 import * as spl from "@solana/spl-token";
 import idl from "./idl.json";
 import { AnchorTest } from "./anchor_test";
